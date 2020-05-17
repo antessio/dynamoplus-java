@@ -1,40 +1,48 @@
-package antessio.dynamoplus.common.service;
+package antessio.dynamoplus.utils;
 
 import java.util.*;
 
-import static antessio.dynamoplus.common.service.MapUtil.entry;
-import static antessio.dynamoplus.common.service.MapUtil.ofEntries;
+import static antessio.dynamoplus.utils.MapUtil.*;
 
 /**
- * Utils for indexing documents
+ * Utils for indexing documents and converting from documents to objects
  */
-public final class IndexingUtils {
+public final class DynamoPlusUtils {
     public static final String FIELD_SEPARATOR = ".";
 
-    private IndexingUtils() {
+    private DynamoPlusUtils() {
 
     }
 
     /**
      * Find the <i>fields</i> in <i>document</i> and builds a map where the key
      * is the field an the value is the once found in the document map.
-     * As convention, to look into nested object fields should use the {@value IndexingUtils#FIELD_SEPARATOR}
+     * As convention, to look into nested object fields should use the {@value DynamoPlusUtils#FIELD_SEPARATOR}
      *
      * @param document the document to store as a map
      * @param fields   the list of values to index
      * @return Map field - document value
      */
-    public static Map<String, Object> getIndexingMap(Map<String, Object> document, List<String> fields) {
-        return ofEntries(
+    public static Map<String, String> getIndexingMap(Map<String, Object> document, List<String> fields) {
+        return linkedHashMapOfEntries(
                 fields.stream()
-                        .map(f -> entry(f, getValueRecursively(f, document).orElse(null)))
+                        .map(f -> entry(f, getValueRecursively(f, document)
+                                .filter(Objects::nonNull)
+                                .filter(v -> v instanceof String)
+                                .orElse(null)))
                         .filter(e -> e.getValue() != null)
                         .toArray(AbstractMap.SimpleEntry[]::new)
         );
-
     }
 
-    private static Optional<Object> getValueRecursively(String f, Map<String, Object> document) {
+    public static <T> T safeGet(Map<String, Object> document, Class<T> expectedClass, String key) {
+        return Optional.ofNullable(document.get(key))
+                .filter(v -> expectedClass.isAssignableFrom(v.getClass()))
+                .map(expectedClass::cast)
+                .orElse(null);
+    }
+
+    public static Optional<Object> getValueRecursively(String f, Map<String, Object> document) {
         String[] fieldsSplit = f.split("\\" + FIELD_SEPARATOR);
         if (fieldsSplit.length == 1) {
             return Optional.ofNullable(document.get(fieldsSplit[0]));
