@@ -1,9 +1,7 @@
 # dynamoplus-java
 A Java library for leveraging GSI overloading on AWS Dynamo DB
 
-
-
-## Info
+## Info
 
 This library is a Java version of https://github.com/antessio/dynamoplus. 
 
