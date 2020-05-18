@@ -10,6 +10,7 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValueUpdate;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static antessio.dynamoplus.utils.MapUtil.entry;
 import static java.util.stream.Collectors.toMap;
@@ -22,10 +23,16 @@ public final class RecordToDynamoDbConverter {
 
     public static Map<String, AttributeValue> toDynamo(Record record) {
         Map<String, AttributeValue> attributeValueMap = new HashMap<>();
-        attributeValueMap.put("pk", new AttributeValue().withS(record.getPk()));
-        attributeValueMap.put("sk", new AttributeValue().withS(record.getSk()));
-        attributeValueMap.put("data", new AttributeValue().withS(record.getData()));
-        attributeValueMap.put("document", ItemUtils.toAttributeValue(record.getDocument()));
+        Optional.ofNullable(record.getPk())
+                .ifPresent(pk -> attributeValueMap.put("pk", new AttributeValue().withS(pk)));
+        Optional.ofNullable(record.getSk())
+                .ifPresent(sk -> attributeValueMap.put("sk", new AttributeValue().withS(sk)));
+        Optional.ofNullable(record.getData())
+                .ifPresent(data -> attributeValueMap.put("data", new AttributeValue().withS(data)));
+        Optional.ofNullable(record.getDocument())
+                .map(ItemUtils::toAttributeValue)
+                .ifPresent(document -> attributeValueMap.put("document", document));
+        
         return attributeValueMap;
     }
 

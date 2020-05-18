@@ -11,8 +11,11 @@ import antessio.dynamoplus.system.bean.collection.Collection;
 import antessio.dynamoplus.system.bean.collection.CollectionBuilder;
 import antessio.dynamoplus.system.bean.index.Index;
 import antessio.dynamoplus.system.bean.index.IndexBuilder;
+import antessio.dynamoplus.utils.ConversionUtils;
 
 import java.util.*;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static antessio.dynamoplus.utils.DynamoPlusUtils.safeGet;
 import static antessio.dynamoplus.utils.MapUtil.entry;
@@ -57,24 +60,40 @@ public class IndexService {
     }
 
     public static Index fromMapToIndex(Map<String, Object> document) {
-        return new IndexBuilder()
-                .uid(UUID.fromString(safeGet(document, String.class, ID)))
-                .orderingKey(safeGet(document, String.class, ORDERING_KEY))
-                .name(safeGet(document, String.class, NAME))
-                .conditions(safeGet(document, List.class, CONDITIONS))
-                .collection(CollectionService.fromMapToCollection(safeGet(document, Map.class, COLLECTION)))
-                .createIndex();
+
+        return ConversionUtils.getInstance().convertMap(document, Index.class);
+//        return new IndexBuilder()
+//                .uid(UUID.fromString(safeGet(document, String.class, ID)))
+//                .orderingKey(safeGet(document, String.class, ORDERING_KEY))
+//                .name(safeGet(document, String.class, NAME))
+//                .conditions(safeGet(document, List.class, CONDITIONS))
+//                .collection(CollectionService.fromMapToCollection(safeGet(document, Map.class, COLLECTION)))
+//                .createIndex();
     }
 
 
     public static Map<String, Object> fromIndexToMap(Index index) {
-        return ofEntries(
-                entry(ID, index.getUid().toString()),
-                entry(NAME, index.getName()),
-                entry(COLLECTION, CollectionService.fromCollectionToMapMin(index.getCollection())),
-                entry(ORDERING_KEY, index.getOrderingKey()),
-                entry(CONDITIONS, index.getConditions())
-        );
+        return ConversionUtils.getInstance().convertObject(index);
+//        Stream<Supplier<AbstractMap.SimpleEntry<String, Object>>> chain = Stream.of(
+//                () -> Optional.ofNullable(index.getUid()).map(id -> entry(ID, id)).orElse(null),
+//                () -> Optional.ofNullable(index.getName()).map(name -> entry(NAME, name)).orElse(null),
+//                () -> Optional.ofNullable(index.getCollection()).map(CollectionService::fromCollectionToMapMin).map(collection -> entry(COLLECTION, collection)).orElse(null),
+//                () -> Optional.ofNullable(index.getOrderingKey()).map(orderingKey -> entry(ORDERING_KEY, orderingKey)).orElse(null),
+//                () -> Optional.ofNullable(index.getConditions()).map(conditions -> entry(CONDITIONS, conditions)).orElse(null)
+//        );
+//        return ofEntries(
+//                chain
+//                        .map(Supplier::get)
+//                        .filter(Objects::nonNull)
+//                        .toArray(AbstractMap.SimpleEntry[]::new)
+//        );
+//        return ofEntries(
+//                entry(ID, index.getUid().toString()),
+//                entry(NAME, index.getName()),
+//                entry(COLLECTION, Optional.ofNullable(index.getCollection()).map(CollectionService::fromCollectionToMapMin).orElse(null)),
+//                entry(ORDERING_KEY, index.getOrderingKey()),
+//                entry(CONDITIONS, index.getConditions())
+//        );
     }
 
 

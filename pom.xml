@@ -10,8 +10,14 @@
     <properties>
         <junit-jupiter.version>5.5.2</junit-jupiter.version>
         <aws-dynamodb.version>1.11.762</aws-dynamodb.version>
+        <jackson-databind.version>2.9.10.4</jackson-databind.version>
     </properties>
     <dependencies>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson-databind.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-dynamodb</artifactId>
@@ -47,12 +53,7 @@
             <version>2.23.0</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>2.9.10.4</version>
-            <scope>test</scope>
-        </dependency>
+
     </dependencies>
 
     <build>

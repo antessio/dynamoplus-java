@@ -9,6 +9,7 @@ public class DynamoDb {
     private final AmazonDynamoDB client;
     private final String tableName;
 
+
     public DynamoDb(AmazonDynamoDB client, String tableName) {
         this.client = client;
         this.tableName = tableName;
@@ -17,6 +18,7 @@ public class DynamoDb {
     public Map<String, AttributeValue> getItem(Map<String, AttributeValue> key) {
         GetItemRequest request = new GetItemRequest()
                 .withTableName(tableName)
+                .withAttributesToGet("pk", "sk", "data", "document")
                 .withKey(key);
         return client.getItem(request).getItem();
     }
@@ -37,9 +39,11 @@ public class DynamoDb {
     public Map<String, AttributeValue> insert(Map<String, AttributeValue> item) {
         PutItemRequest putItemRequest = new PutItemRequest()
                 .withItem(item)
-                .withReturnValues(ReturnValue.ALL_NEW)
+                .withReturnValues(ReturnValue.ALL_OLD)
                 .withTableName(tableName);
-        return client.putItem(putItemRequest).getAttributes();
+        PutItemResult response = client.putItem(putItemRequest);
+        //logging
+        return item;
     }
 
     public Map<String, AttributeValue> update(Map<String, AttributeValueUpdate> item) {

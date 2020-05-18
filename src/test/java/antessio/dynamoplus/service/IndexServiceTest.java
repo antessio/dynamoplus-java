@@ -1,26 +1,31 @@
 package antessio.dynamoplus.service;
 
+import antessio.dynamoplus.dynamodb.bean.Query;
 import antessio.dynamoplus.dynamodb.bean.Record;
 import antessio.dynamoplus.dynamodb.bean.RecordBuilder;
+import antessio.dynamoplus.dynamodb.bean.query.QueryResultsWithCursor;
 import antessio.dynamoplus.dynamodb.impl.DynamoDbTableRepository;
+import antessio.dynamoplus.system.bean.collection.Attribute;
+import antessio.dynamoplus.system.bean.collection.AttributeBuilder;
 import antessio.dynamoplus.system.bean.collection.CollectionBuilder;
 import antessio.dynamoplus.system.bean.index.Index;
 import antessio.dynamoplus.system.bean.index.IndexBuilder;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import org.assertj.core.internal.FieldByFieldComparator;
 import org.jeasy.random.EasyRandom;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 
-import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
+import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -30,16 +35,11 @@ class IndexServiceTest {
     private DynamoDbTableRepository repoTable = mock(DynamoDbTableRepository.class);
     private IndexService indexService;
     private EasyRandom generator;
-    private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
         indexService = new IndexService(repoTable);
         generator = new EasyRandom();
-        objectMapper = new ObjectMapper();
-        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-
-        objectMapper.setPropertyNamingStrategy(PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);
 
     }
 
@@ -51,7 +51,7 @@ class IndexServiceTest {
     @Test
     void createIndex() {
         //given
-        Index index = generator.nextObject(Index.class);
+        Index index = randomIndex();
         Map<String, Object> document = IndexService.fromIndexToMap(index);
         Record expectedRecord = RecordBuilder.aRecord()
                 .withPk("index#" + index.getUid())
@@ -73,7 +73,7 @@ class IndexServiceTest {
     @Test
     void createGsiRows() {
         //given
-        Index index = generator.nextObject(Index.class);
+        Index index = randomIndex();
         Map<String, Object> document = IndexService.fromIndexToMap(index);
         Record expectedRecord = RecordBuilder.aRecord()
                 .withPk("index#" + index.getUid())
@@ -89,55 +89,48 @@ class IndexServiceTest {
         verify(repoTable, times(1)).create(refEq(expectedRecord));
     }
 
-    @Test
-    void fromMapToIndex() {
-        //given
-        Index index = generator.nextObject(IndexBuilder.class)
-                .collection("example")
-                .createIndex();
-        Map<String, Object> indexAsMap = objectMapper.convertValue(index, new TypeReference<Map<String, Object>>() {
-        });
-        //when
-        Index result = IndexService.fromMapToIndex(indexAsMap);
-        //then
-        assertThat(result)
-                .isEqualToIgnoringGivenFields(index, "collection");
-        assertThat(result.getCollection())
-                .isEqualToIgnoringGivenFields(index.getCollection(), "attributes", "autoGenerateId");
-    }
-
-    @Test
-    void fromIndexToMap() {
-        //given
-        Index index = generator.nextObject(IndexBuilder.class)
-                .collection(new CollectionBuilder()
-                        .name("example")
-                        .idKey("id")
-                        .createCollection())
-                .conditions(Arrays.asList(
-                        "field1", "field2"
-                ))
-                .createIndex();
-        Map<String, Object> indexAsMap = objectMapper.convertValue(index, new TypeReference<Map<String, Object>>() {
-        });
-        //when
-        Map<String, Object> result = IndexService.fromIndexToMap(index);
-        //then
-        assertThat(result).isEqualTo(indexAsMap);
-    }
 
     @Test
     void getById() {
         //given
+        UUID id = UUID.randomUUID();
+        Index index = randomIndex();
+        Map<String, Object> document = IndexService.fromIndexToMap(index);
+        when(repoTable.get(any(), any())).thenReturn(generator.nextObject(RecordBuilder.class)
+                .withDocument(document)
+                .build());
         //when
+        Index result = indexService.getById(id);
         //then
+        assertThat(result)
+                .usingComparator(new FieldByFieldComparator())
+                .isEqualToIgnoringGivenFields(index, "collection");
+        verify(repoTable).get(eq("index#" + id), eq("index"));
     }
 
     @Test
     void getByCollectionName() {
         //given
+        UUID id = UUID.randomUUID();
+        Index index = randomIndex();
+        Map<String, Object> document = IndexService.fromIndexToMap(index);
+        when(repoTable.query(any())).thenReturn(
+                new QueryResultsWithCursor(generator.objects(RecordBuilder.class, 2)
+                        .map(b -> b.withDocument(document)
+                                .build()).collect(toList()),
+                        null)
+        );
         //when
+        Optional<Index> result = indexService.getByCollectionName("example");
         //then
+        assertThat(result)
+                .get()
+                .usingComparator(new FieldByFieldComparator())
+                .isEqualToIgnoringGivenFields(index, "collection");
+        ArgumentCaptor<Query> captor = ArgumentCaptor.forClass(Query.class);
+        verify(repoTable).query(captor.capture());
+        assertThat(captor.getValue().getPartitionKey())
+                .isEqualTo("index#collection.name#name");
     }
 
     @Test
@@ -152,5 +145,16 @@ class IndexServiceTest {
         //given
         //when
         //then
+    }
+
+    private Index randomIndex() {
+        return generator.nextObject(IndexBuilder.class)
+                .collection(generator.nextObject(CollectionBuilder.class)
+                        .fields(generator.objects(AttributeBuilder.class, 3)
+                                .map(b -> b.attributes(null).build())
+                                .collect(toList()))
+                        .createCollection())
+                .conditions(generator.objects(String.class, 3).collect(toList()))
+                .createIndex();
     }
 }

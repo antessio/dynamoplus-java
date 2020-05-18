@@ -27,7 +27,8 @@ public final class RecordFactory {
     }
 
     public Record masterRecordFromDocument(Map<String, Object> document, Collection collection) {
-        String idKey = getIdKeyFromCollection(document, collection);
+        String idKey = getIdKeyFromCollection(document, collection)
+                .orElseThrow(() -> new RuntimeException("the document have no value for key " + collection.getIdKey()));
         String sk = collection.getName();
         String data = getOrdering_key(document, "order_unique")
                 .orElse(idKey);
@@ -39,27 +40,26 @@ public final class RecordFactory {
                 .build();
     }
 
-    private String getIdKeyFromCollection(Map<String, Object> document, Collection collection) {
+    private Optional<String> getIdKeyFromCollection(Map<String, Object> document, Collection collection) {
         return DynamoPlusUtils.getValueRecursively(collection.getIdKey(), document)
                 .filter(o -> o instanceof String)
-                .map(String.class::cast)
-                .orElseThrow(() -> new RuntimeException("the document have no value for " + collection.getIdKey()));
+                .map(String.class::cast);
     }
 
 
     public Record indexingRecordFromDocument(Map<String, Object> document, Index index) {
         Collection collection = index.getCollection();
-        String idKey = getIdKeyFromCollection(document, collection);
+        Optional<String> maybeIdKey = getIdKeyFromCollection(document, collection);
 
         Map<String, String> valuesInIndex = DynamoPlusUtils.getIndexingMap(document, index.getConditions());
-        String keysString = String.join("#", valuesInIndex.keySet());
+        String keysString = String.join("#", index.getConditions());
         String valuesString = String.join("#", valuesInIndex.values());
         String data = getOrdering_key(document, index.getOrderingKey())
                 .map(orderingKey -> String.format("%s#%s", valuesString, orderingKey))
                 .orElse(valuesString);
 
         return RecordBuilder.aRecord()
-                .withPk(String.format("%s#%s", collection.getName(), idKey))
+                .withPk(maybeIdKey.map(idKey -> String.format("%s#%s", collection.getName(), idKey)).orElse(null))
                 .withSk(String.format("%s#%s", collection.getName(), keysString))
                 .withData(data)
                 .withDocument(document)
