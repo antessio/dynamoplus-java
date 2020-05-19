@@ -1,19 +1,15 @@
 package antessio.dynamoplus.service;
 
+import antessio.dynamoplus.dynamodb.RecordFactory;
+import antessio.dynamoplus.dynamodb.bean.Record;
+import antessio.dynamoplus.dynamodb.impl.DynamoDbTableRepository;
 import antessio.dynamoplus.system.bean.collection.*;
+import antessio.dynamoplus.utils.ConversionUtils;
 
-
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static antessio.dynamoplus.utils.DynamoPlusUtils.safeGet;
 import static antessio.dynamoplus.utils.MapUtil.entry;
 import static antessio.dynamoplus.utils.MapUtil.ofEntries;
-import static java.util.stream.Collectors.toList;
 
 public class CollectionService {
 
@@ -24,7 +20,19 @@ public class CollectionService {
     public static final String ATTRIBUTE_TYPE = "type";
     public static final String ATTRIBUTE_SUB_ATTRIBUTES = "attributes";
     public static final String ATTRIBUTE_CONSTRAINTS = "constraints";
-    public static final String AUTO_GENERATE_ID = "auto_generate_id";
+
+    private static final Collection COLLECTION_METADATA = new CollectionBuilder()
+            .idKey("name")
+            .name("collection")
+            .autoGenerateId(false)
+            .createCollection();
+
+    private final DynamoDbTableRepository tableRepository;
+
+    public CollectionService(DynamoDbTableRepository tableRepository) {
+        this.tableRepository = tableRepository;
+    }
+
 
     public static Map<String, Object> fromCollectionToMapMin(Collection collection) {
         return ofEntries(
@@ -34,61 +42,46 @@ public class CollectionService {
     }
 
     public static Map<String, Object> fromCollectionToMap(Collection collection) {
-        return Stream.concat(
-                fromCollectionToMapMin(collection).entrySet().stream(),
-                ofEntries(
-                        entry(AUTO_GENERATE_ID, collection.isAutoGenerateId() + ""),
-                        entry(ATTRIBUTES, collection.getAttributes().stream().map(CollectionService::fromAttributeToMap).collect(toList()))
-                ).entrySet().stream())
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return ConversionUtils.getInstance().convertObject(collection);
     }
 
-    private static Map<String, Object> fromAttributeToMap(Attribute attribute) {
-        return ofEntries(
-                entry(ATTRIBUTE_NAME, attribute.getName()),
-                entry(ATTRIBUTE_TYPE, attribute.getType().name()),
-                entry(ATTRIBUTE_CONSTRAINTS, attribute.getConstraints().stream().map(CollectionAttributeConstraint::name).collect(toList())),
-                entry(ATTRIBUTE_SUB_ATTRIBUTES, attribute.getAttributes().stream().map(CollectionService::fromAttributeToMap).collect(toList()))
-
-        );
-    }
 
     public static Collection fromMapToCollection(Map<String, Object> document) {
+        return ConversionUtils.getInstance().convertMap(document, Collection.class);
+    }
 
-        return new CollectionBuilder()
-                .autoGenerateId(Boolean.valueOf(safeGet(document, String.class, AUTO_GENERATE_ID)))
-                .idKey(safeGet(document, String.class, ID_KEY))
-                .name(safeGet(document, String.class, NAME))
-                .fields(convertToAttributeList(document))
+    public Collection getCollectionByName(String name) {
+        Collection collection = new CollectionBuilder()
+                .name(name)
                 .createCollection();
+        Record record = RecordFactory.getInstance().masterRecordFromDocument(fromCollectionToMap(collection), COLLECTION_METADATA);
+        Record foundRecord = tableRepository.get(record.getPk(), record.getSk());
+        return fromMapToCollection(foundRecord.getDocument());
     }
 
-    private static List<Attribute> convertToAttributeList(Map<String, Object> document) {
-        return document.containsKey(ATTRIBUTES) ?
-                (List<Attribute>) Optional.ofNullable(safeGet(document, List.class, ATTRIBUTES))
-                        .map(l -> l.stream()
-                                .filter(e -> Map.class.isAssignableFrom(e.getClass()))
-                                .map(e -> fromMapToAttribute(((Map<String, Object>) e)))
-                                .collect(toList()))
-                        .orElse(null) :
-                Collections.emptyList()
-                ;
+    public Collection createCollection(Collection collection) {
+        Map<String, Object> collectionDocument = fromCollectionToMap(collection);
+        Record record = RecordFactory.getInstance().masterRecordFromDocument(collectionDocument, COLLECTION_METADATA);
+        Record recordCreated = tableRepository.create(record);
+        return fromMapToCollection(recordCreated.getDocument());
     }
 
-    private static Attribute fromMapToAttribute(Map<String, Object> a) {
-        return new AttributeBuilder()
-                .attributeName(safeGet(a, String.class, ATTRIBUTE_NAME))
-                .attributeType(CollectionAttributeType.valueOf(safeGet(a, String.class, ATTRIBUTE_TYPE)))
-                .constraints(a.containsKey(ATTRIBUTE_CONSTRAINTS) ? convertToConstraintList(a) : null)
-                .attributes(a.containsKey(ATTRIBUTES) ? convertToAttributeList(a) : null)
-                .build();
+    public Collection updateCollection(Collection collection) {
+        Map<String, Object> collectionDocument = fromCollectionToMap(collection);
+        Record record = RecordFactory.getInstance().masterRecordFromDocument(collectionDocument, COLLECTION_METADATA);
+        Record recordCreated = tableRepository.update(record);
+        return fromMapToCollection(recordCreated.getDocument());
     }
 
-    private static List<CollectionAttributeConstraint> convertToConstraintList(Map<String, Object> a) {
-        return (List<CollectionAttributeConstraint>) safeGet(a, List.class, ATTRIBUTE_CONSTRAINTS)
-                .stream()
-                .filter(e -> e instanceof String)
-                .map(e -> CollectionAttributeConstraint.valueOf((String) e))
-                .collect(toList());
+
+    public void delete(String name) {
+        Collection collection = new CollectionBuilder()
+                .name(name)
+                .createCollection();
+        Record record = RecordFactory.getInstance().masterRecordFromDocument(fromCollectionToMap(collection), COLLECTION_METADATA);
+        Record foundRecord = tableRepository.delete(record.getPk(), record.getSk());
+        Collection collectionRemoved = fromMapToCollection(foundRecord.getDocument());
     }
+
+
 }

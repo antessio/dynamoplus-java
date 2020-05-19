@@ -1,45 +1,116 @@
 package antessio.dynamoplus.service;
 
+import antessio.dynamoplus.dynamodb.bean.Record;
+import antessio.dynamoplus.dynamodb.bean.RecordBuilder;
+import antessio.dynamoplus.dynamodb.impl.DynamoDbTableRepository;
 import antessio.dynamoplus.system.bean.collection.*;
 import antessio.dynamoplus.system.bean.collection.Collection;
+import org.assertj.core.groups.Tuple;
 import org.jeasy.random.EasyRandom;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
 
-import static antessio.dynamoplus.utils.MapUtil.entry;
-import static antessio.dynamoplus.utils.MapUtil.ofEntries;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.AdditionalAnswers.returnsFirstArg;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 
 class CollectionServiceTest {
 
     private EasyRandom generator;
+    private CollectionService collectionService;
+    private DynamoDbTableRepository tableRepository = mock(DynamoDbTableRepository.class);
 
     @BeforeEach
     void setUp() {
         generator = new EasyRandom();
+        collectionService = new CollectionService(tableRepository);
     }
 
     @Test
-    void fromCollectionToMapMin() {
+    void testGetCollectionByName() {
         //given
         Collection collection = randomCollection();
+        Map<String, Object> document = CollectionService.fromCollectionToMap(collection);
+        when(tableRepository.get(any(), any())).thenReturn(generator.nextObject(RecordBuilder.class)
+                .withDocument(document)
+                .build());
         //when
-        Map<String, Object> result = CollectionService.fromCollectionToMapMin(collection);
+        Collection result = collectionService.getCollectionByName(collection.getName());
         //then
-        assertThat(result)
-                .containsKeys(
-                        CollectionService.ID_KEY,
-                        CollectionService.NAME);
+        assertThat(result).isEqualToIgnoringGivenFields(collection, "attributes");
+        assertThat(result.getAttributes())
+                .extracting(a -> tuple(a.getName(), a.getType(), a.getConstraints()))
+                .containsOnly(collection.getAttributes().stream().map(a -> tuple(a.getName(), a.getType(), a.getConstraints())).toArray(Tuple[]::new));
+        verify(tableRepository).get(eq("collection#" + collection.getName()), eq("collection"));
+    }
+
+    @Test
+    void testInsertNewCollection() {
+        //given
+        Collection collection = randomCollection();
+        Map<String, Object> document = CollectionService.fromCollectionToMap(collection);
+        Record expectedRecord = RecordBuilder.aRecord()
+                .withPk("collection#" + collection.getName())
+                .withSk("collection")
+                .withData(collection.getName())
+                .withDocument(document)
+                .build();
+        when(tableRepository.create(any())).thenAnswer(returnsFirstArg());
+        //when
+        Collection result = collectionService.createCollection(collection);
+        //then
+        assertThat(result).isEqualToIgnoringGivenFields(collection, "attributes");
+        assertThat(result.getAttributes())
+                .extracting(a -> tuple(a.getName(), a.getType(), a.getConstraints()))
+                .containsOnly(collection.getAttributes().stream().map(a -> tuple(a.getName(), a.getType(), a.getConstraints())).toArray(Tuple[]::new));
+        verify(tableRepository).create(refEq(expectedRecord));
+    }
+
+    @Test
+    void testUpdateCollection() {
+        //given
+        Collection collection = randomCollection();
+        Map<String, Object> document = CollectionService.fromCollectionToMap(collection);
+        Record expectedRecord = RecordBuilder.aRecord()
+                .withPk("collection#" + collection.getName())
+                .withSk("collection")
+                .withData(collection.getName())
+                .withDocument(document)
+                .build();
+        when(tableRepository.update(any())).thenAnswer(returnsFirstArg());
+        //when
+        Collection result = collectionService.updateCollection(collection);
+        //then
+        assertThat(result).isEqualToIgnoringGivenFields(collection, "attributes");
+        assertThat(result.getAttributes())
+                .extracting(a -> tuple(a.getName(), a.getType(), a.getConstraints()))
+                .containsOnly(collection.getAttributes().stream().map(a -> tuple(a.getName(), a.getType(), a.getConstraints())).toArray(Tuple[]::new));
+        verify(tableRepository).update(refEq(expectedRecord));
+    }
+
+    @Test
+    void testDeleteCollectionByName() {
+        //given
+        Collection collection = randomCollection();
+        Map<String, Object> document = CollectionService.fromCollectionToMap(collection);
+        when(tableRepository.delete(any(), any())).thenReturn(generator.nextObject(RecordBuilder.class)
+                .withDocument(document)
+                .build());
+        //when
+        collectionService.delete(collection.getName());
+        //then
+        verify(tableRepository).delete(eq("collection#" + collection.getName()), eq("collection"));
     }
 
     private Collection randomCollection() {
         return generator.nextObject(CollectionBuilder.class)
-                .fields(generator.objects(AttributeBuilder.class, 4)
+                .attributes(generator.objects(AttributeBuilder.class, 4)
                         .map(b -> b.constraints(
                                 generator.objects(CollectionAttributeConstraint.class, 1)
                                         .collect(toList()))
@@ -50,72 +121,5 @@ class CollectionServiceTest {
                 .createCollection();
     }
 
-    @Test
-    void fromCollectionToMap() {
-        //given
-        Collection collection = randomCollection();
-        //when
-        Map<String, Object> result = CollectionService.fromCollectionToMap(collection);
-        //then
-        assertThat(result)
-                .containsKeys(
-                        CollectionService.ID_KEY,
-                        CollectionService.NAME,
-                        CollectionService.ATTRIBUTES,
-                        CollectionService.AUTO_GENERATE_ID);
-        assertThat(result.get(CollectionService.ATTRIBUTES))
-                .isInstanceOf(List.class);
-        List<Map<String, Object>> attributesMap = (List<Map<String, Object>>) result.get(CollectionService.ATTRIBUTES);
-        assertThat(attributesMap)
-                .allMatch(m -> m.containsKey(CollectionService.ATTRIBUTE_TYPE))
-                .allMatch(m -> m.containsKey(CollectionService.ATTRIBUTE_NAME))
-                .allMatch(m -> m.containsKey(CollectionService.ATTRIBUTE_CONSTRAINTS));
-    }
-
-    @Test
-    void fromMapToCollection() {
-        //given
-        String collectionName = "example";
-        String collectionIdKey = "id";
-        boolean isAutoGenerated = false;
-        List<Map<String, Object>> field21 = Collections.singletonList(
-                ofEntries(
-                        entry(CollectionService.ATTRIBUTE_NAME, "field21"),
-                        entry(CollectionService.ATTRIBUTE_TYPE, CollectionAttributeType.STRING.name()),
-                        entry(CollectionService.ATTRIBUTE_CONSTRAINTS, Collections.singletonList(CollectionAttributeConstraint.NOT_NULL.name()))
-                )
-        );
-        Map<String, Object> collectionMap = ofEntries(
-                entry(CollectionService.ID_KEY, collectionIdKey),
-                entry(CollectionService.NAME, collectionName),
-                entry(CollectionService.AUTO_GENERATE_ID, isAutoGenerated + ""),
-                entry(CollectionService.ATTRIBUTES, Arrays.asList(
-                        ofEntries(
-                                entry(CollectionService.ATTRIBUTE_NAME, "field1"),
-                                entry(CollectionService.ATTRIBUTE_TYPE, CollectionAttributeType.STRING.name()),
-                                entry(CollectionService.ATTRIBUTE_CONSTRAINTS, Collections.singletonList(CollectionAttributeConstraint.NOT_NULL.name()))
-                        ),
-                        ofEntries(
-                                entry(CollectionService.ATTRIBUTE_NAME, "field2"),
-                                entry(CollectionService.ATTRIBUTE_TYPE, CollectionAttributeType.OBJECT.name()),
-                                entry(CollectionService.ATTRIBUTE_SUB_ATTRIBUTES, field21)
-                        )
-                ))
-        );
-        //when
-        Collection collection = CollectionService.fromMapToCollection(collectionMap);
-        //then
-        assertThat(collection)
-                .matches(c -> c.getName().equals(collectionName))
-                .matches(c -> c.getIdKey().equals(collectionIdKey))
-                .matches(c -> c.isAutoGenerateId() == isAutoGenerated)
-        ;
-        assertThat(collection.getAttributes())
-                .extracting(a -> tuple(a.getName(), a.getType(), Optional.ofNullable(a.getConstraints()).map(List::size).orElse(0), Optional.ofNullable(a.getAttributes()).map(List::size).orElse(0)))
-                .containsOnly(
-                        tuple("field1", CollectionAttributeType.STRING, 1, 0),
-                        tuple("field2", CollectionAttributeType.OBJECT, 0, 1)
-                );
-    }
 
 }

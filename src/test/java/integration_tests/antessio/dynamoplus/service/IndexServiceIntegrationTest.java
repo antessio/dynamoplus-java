@@ -23,55 +23,9 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class IndexServiceIntegrationTest {
+public class IndexServiceIntegrationTest extends SystemIntegrationTest {
     private IndexService indexService;
 
-    private static AmazonDynamoDB dynamoLocal() {
-        String endpoint = "http://localhost:9898";
-        BasicAWSCredentials credentials = new BasicAWSCredentials("foo", "bar");
-        AmazonDynamoDBClientBuilder clientBuilder = AmazonDynamoDBClientBuilder.standard()
-                .withCredentials(new AWSStaticCredentialsProvider(credentials))
-                .withEndpointConfiguration(
-                        new AwsClientBuilder.EndpointConfiguration(endpoint, null)
-                );
-        return clientBuilder.build();
-    }
-
-    @BeforeAll
-    static void beforeAll() {
-        dynamoLocal().createTable(new CreateTableRequest()
-                .withTableName("system")
-                .withProvisionedThroughput(new ProvisionedThroughput().withReadCapacityUnits(1l).withWriteCapacityUnits(1l))
-                .withAttributeDefinitions(new AttributeDefinition()
-                                .withAttributeName("pk")
-                                .withAttributeType(ScalarAttributeType.S),
-                        new AttributeDefinition()
-                                .withAttributeName("sk")
-                                .withAttributeType(ScalarAttributeType.S),
-                        new AttributeDefinition()
-                                .withAttributeName("data")
-                                .withAttributeType(ScalarAttributeType.S)
-                )
-                .withGlobalSecondaryIndexes(new GlobalSecondaryIndex().withIndexName("sk-data-index")
-                        .withProvisionedThroughput(new ProvisionedThroughput().withReadCapacityUnits(1l).withWriteCapacityUnits(1l))
-                        .withProjection(new Projection().withProjectionType(ProjectionType.ALL))
-                        .withKeySchema(
-                                new KeySchemaElement().withAttributeName("sk")
-                                        .withKeyType(KeyType.HASH),
-                                new KeySchemaElement().withAttributeName("data")
-                                        .withKeyType(KeyType.RANGE)))
-                .withKeySchema(
-                        new KeySchemaElement().withAttributeName("pk")
-                                .withKeyType(KeyType.HASH),
-                        new KeySchemaElement().withAttributeName("sk")
-                                .withKeyType(KeyType.RANGE))
-        );
-    }
-
-    @AfterAll
-    static void afterAll() {
-        dynamoLocal().deleteTable("system");
-    }
 
     @BeforeEach
     void setUp() {

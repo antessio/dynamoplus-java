@@ -40,16 +40,9 @@ class RecordToDynamoDbConverterTest {
         assertThat(result.get("pk").getS()).isEqualTo(record.getPk());
         assertThat(result.get("sk").getS()).isEqualTo(record.getSk());
         assertThat(result.get("data").getS()).isEqualTo(record.getData());
-        Map<String, AttributeValue> documentDynamo = result.get("document").getM();
-        assertThat(documentDynamo.get("field1").getS()).isEqualTo("value1");
-        assertThat(documentDynamo.get("field3").getM())
-                .isNotNull()
-                .matches(m -> m.containsKey("field31"))
-                .matches(m -> m.containsKey("field32"))
-                .matches(m -> m.get("field31").getS().equals("value31"));
-        assertThat(documentDynamo.get("field3").getM().get("field32").getM())
-                .isNotNull()
-                .matches(m -> m.get("field321").getS().equals("value321"));
+        String documentDynamo = result.get("document").getS();
+        assertThat(documentDynamo)
+                .isEqualTo("{\"field1\":\"value1\",\"field3\":{\"field31\":\"value31\",\"field32\":{\"field321\":\"value321\"}},\"field2\":\"value2\"}");
     }
 
     @Test
@@ -67,19 +60,12 @@ class RecordToDynamoDbConverterTest {
                         ))
                 ))
         );
+        String document = "{\"field1\":\"value1\",\"field3\":{\"field31\":\"value31\",\"field32\":{\"field321\":\"value321\"}}}";
         Map<String, AttributeValue> item = new HashMap<>();
         item.put("pk", new AttributeValue().withS(expectedPk));
         item.put("sk", new AttributeValue().withS(expectedSk));
         item.put("data", new AttributeValue().withS(expectedData));
-        Map<String, AttributeValue> nested1 = new HashMap<>();
-        nested1.put("field1", new AttributeValue().withS("value1"));
-        Map<String, AttributeValue> nested2 = new HashMap<>();
-        nested2.put("field31", new AttributeValue().withS("value31"));
-        Map<String, AttributeValue> nested3 = new HashMap<>();
-        nested3.put("field321", new AttributeValue().withS("value321"));
-        nested2.put("field32", new AttributeValue().withM(nested3));
-        nested1.put("field3", new AttributeValue().withM(nested2));
-        item.put("document", new AttributeValue().withM(nested1));
+        item.put("document", new AttributeValue().withS(document));
         //when
         Record result = RecordToDynamoDbConverter.fromDynamo(item);
         //then

@@ -14,12 +14,6 @@ import antessio.dynamoplus.system.bean.index.IndexBuilder;
 import antessio.dynamoplus.utils.ConversionUtils;
 
 import java.util.*;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
-
-import static antessio.dynamoplus.utils.DynamoPlusUtils.safeGet;
-import static antessio.dynamoplus.utils.MapUtil.entry;
-import static antessio.dynamoplus.utils.MapUtil.ofEntries;
 
 public class IndexService {
 
@@ -32,17 +26,20 @@ public class IndexService {
             .collection(INDEX_COLLECTION)
             .conditions(new ArrayList<>(Arrays.asList("collection.name", "name")))
             .createIndex();
-    public static final String ORDERING_KEY = "ordering_key";
-    public static final String ID = "uid";
-    public static final String NAME = "name";
-    public static final String COLLECTION = "collection";
-    public static final String CONDITIONS = "conditions";
     private final DynamoDbTableRepository tableRepository;
 
 
-    public IndexService(
-            DynamoDbTableRepository tableRepository) {
+    public IndexService(DynamoDbTableRepository tableRepository) {
         this.tableRepository = tableRepository;
+    }
+
+    public static Index fromMapToIndex(Map<String, Object> document) {
+        return ConversionUtils.getInstance().convertMap(document, Index.class);
+    }
+
+
+    public static Map<String, Object> fromIndexToMap(Index index) {
+        return ConversionUtils.getInstance().convertObject(index);
     }
 
     public Index createIndex(Index index) {
@@ -57,43 +54,6 @@ public class IndexService {
         Record record = RecordFactory.getInstance()
                 .indexingRecordFromDocument(indexAsDocument, INDEX_FOR_INDEX_COLLECTION);
         tableRepository.create(record);
-    }
-
-    public static Index fromMapToIndex(Map<String, Object> document) {
-
-        return ConversionUtils.getInstance().convertMap(document, Index.class);
-//        return new IndexBuilder()
-//                .uid(UUID.fromString(safeGet(document, String.class, ID)))
-//                .orderingKey(safeGet(document, String.class, ORDERING_KEY))
-//                .name(safeGet(document, String.class, NAME))
-//                .conditions(safeGet(document, List.class, CONDITIONS))
-//                .collection(CollectionService.fromMapToCollection(safeGet(document, Map.class, COLLECTION)))
-//                .createIndex();
-    }
-
-
-    public static Map<String, Object> fromIndexToMap(Index index) {
-        return ConversionUtils.getInstance().convertObject(index);
-//        Stream<Supplier<AbstractMap.SimpleEntry<String, Object>>> chain = Stream.of(
-//                () -> Optional.ofNullable(index.getUid()).map(id -> entry(ID, id)).orElse(null),
-//                () -> Optional.ofNullable(index.getName()).map(name -> entry(NAME, name)).orElse(null),
-//                () -> Optional.ofNullable(index.getCollection()).map(CollectionService::fromCollectionToMapMin).map(collection -> entry(COLLECTION, collection)).orElse(null),
-//                () -> Optional.ofNullable(index.getOrderingKey()).map(orderingKey -> entry(ORDERING_KEY, orderingKey)).orElse(null),
-//                () -> Optional.ofNullable(index.getConditions()).map(conditions -> entry(CONDITIONS, conditions)).orElse(null)
-//        );
-//        return ofEntries(
-//                chain
-//                        .map(Supplier::get)
-//                        .filter(Objects::nonNull)
-//                        .toArray(AbstractMap.SimpleEntry[]::new)
-//        );
-//        return ofEntries(
-//                entry(ID, index.getUid().toString()),
-//                entry(NAME, index.getName()),
-//                entry(COLLECTION, Optional.ofNullable(index.getCollection()).map(CollectionService::fromCollectionToMapMin).orElse(null)),
-//                entry(ORDERING_KEY, index.getOrderingKey()),
-//                entry(CONDITIONS, index.getConditions())
-//        );
     }
 
 

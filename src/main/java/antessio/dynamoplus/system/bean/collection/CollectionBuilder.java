@@ -18,7 +18,7 @@ public class CollectionBuilder {
         return this;
     }
 
-    public CollectionBuilder fields(List<Attribute> attributes) {
+    public CollectionBuilder attributes(List<Attribute> attributes) {
         this.attributes = attributes;
         return this;
     }

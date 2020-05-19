@@ -5,7 +5,6 @@ import antessio.dynamoplus.dynamodb.bean.Record;
 import antessio.dynamoplus.dynamodb.bean.RecordBuilder;
 import antessio.dynamoplus.dynamodb.bean.query.QueryResultsWithCursor;
 import antessio.dynamoplus.dynamodb.impl.DynamoDbTableRepository;
-import antessio.dynamoplus.system.bean.collection.Attribute;
 import antessio.dynamoplus.system.bean.collection.AttributeBuilder;
 import antessio.dynamoplus.system.bean.collection.CollectionBuilder;
 import antessio.dynamoplus.system.bean.index.Index;
@@ -17,8 +16,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -49,7 +46,7 @@ class IndexServiceTest {
     }
 
     @Test
-    void createIndex() {
+    void testCreateIndex() {
         //given
         Index index = randomIndex();
         Map<String, Object> document = IndexService.fromIndexToMap(index);
@@ -70,8 +67,9 @@ class IndexServiceTest {
         verify(repoTable).create(refEq(expectedRecord));
     }
 
+
     @Test
-    void createGsiRows() {
+    void testCreateGsiRows() {
         //given
         Index index = randomIndex();
         Map<String, Object> document = IndexService.fromIndexToMap(index);
@@ -91,7 +89,7 @@ class IndexServiceTest {
 
 
     @Test
-    void getById() {
+    void testGetById() {
         //given
         UUID id = UUID.randomUUID();
         Index index = randomIndex();
@@ -109,9 +107,8 @@ class IndexServiceTest {
     }
 
     @Test
-    void getByCollectionName() {
+    void testGetByCollectionName() {
         //given
-        UUID id = UUID.randomUUID();
         Index index = randomIndex();
         Map<String, Object> document = IndexService.fromIndexToMap(index);
         when(repoTable.query(any())).thenReturn(
@@ -121,7 +118,7 @@ class IndexServiceTest {
                         null)
         );
         //when
-        Optional<Index> result = indexService.getByCollectionName("example");
+        Optional<Index> result = indexService.getByCollectionName(index.getCollection().getName());
         //then
         assertThat(result)
                 .get()
@@ -129,28 +126,63 @@ class IndexServiceTest {
                 .isEqualToIgnoringGivenFields(index, "collection");
         ArgumentCaptor<Query> captor = ArgumentCaptor.forClass(Query.class);
         verify(repoTable).query(captor.capture());
-        assertThat(captor.getValue().getPartitionKey())
+        Query actualQuery = captor.getValue();
+        assertThat(actualQuery.getPartitionKey())
                 .isEqualTo("index#collection.name#name");
+        assertThat(actualQuery.getPredicate())
+                .matches(p -> !p.isRange())
+                .matches(p -> p.getValue().getValue1().equals(index.getCollection().getName()))
+                .matches(p -> p.getValue().getValue2() == null);
     }
 
     @Test
-    void getByCollectionNameAndName() {
+    void testGetByCollectionNameAndName() {
         //given
+        Index index = randomIndex();
+        Map<String, Object> document = IndexService.fromIndexToMap(index);
+        when(repoTable.query(any())).thenReturn(
+                new QueryResultsWithCursor(generator.objects(RecordBuilder.class, 2)
+                        .map(b -> b.withDocument(document)
+                                .build()).collect(toList()),
+                        null)
+        );
         //when
+        Optional<Index> result = indexService.getByCollectionNameAndName(index.getCollection().getName(), index.getName());
         //then
+        assertThat(result)
+                .get()
+                .usingComparator(new FieldByFieldComparator())
+                .isEqualToIgnoringGivenFields(index, "collection");
+        ArgumentCaptor<Query> captor = ArgumentCaptor.forClass(Query.class);
+        verify(repoTable).query(captor.capture());
+        Query actualQuery = captor.getValue();
+        assertThat(actualQuery.getPartitionKey())
+                .isEqualTo("index#collection.name#name");
+        assertThat(actualQuery.getPredicate())
+                .matches(p -> !p.isRange())
+                .matches(p -> p.getValue().getValue1().equals(index.getCollection().getName() + "#" + index.getName()))
+                .matches(p -> p.getValue().getValue2() == null);
     }
 
     @Test
-    void deleteIndexById() {
+    void testDeleteIndexById() {
         //given
+        UUID id = UUID.randomUUID();
+        Index index = randomIndex();
+        Map<String, Object> document = IndexService.fromIndexToMap(index);
+        when(repoTable.get(any(), any())).thenReturn(generator.nextObject(RecordBuilder.class)
+                .withDocument(document)
+                .build());
         //when
+        indexService.deleteIndexById(id);
         //then
+        verify(repoTable).delete(eq("index#" + id), eq("index"));
     }
 
     private Index randomIndex() {
         return generator.nextObject(IndexBuilder.class)
                 .collection(generator.nextObject(CollectionBuilder.class)
-                        .fields(generator.objects(AttributeBuilder.class, 3)
+                        .attributes(generator.objects(AttributeBuilder.class, 3)
                                 .map(b -> b.attributes(null).build())
                                 .collect(toList()))
                         .createCollection())
