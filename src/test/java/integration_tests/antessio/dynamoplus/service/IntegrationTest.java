@@ -6,11 +6,10 @@ import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.model.*;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
-public class SystemIntegrationTest {
-    static AmazonDynamoDB dynamoLocal() {
+public class IntegrationTest {
+    protected static AmazonDynamoDB dynamoLocal() {
         String endpoint = "http://localhost:9898";
         BasicAWSCredentials credentials = new BasicAWSCredentials("foo", "bar");
         AmazonDynamoDBClientBuilder clientBuilder = AmazonDynamoDBClientBuilder.standard()
@@ -23,13 +22,13 @@ public class SystemIntegrationTest {
 
     @BeforeAll
     static void beforeAll() {
-        try {
-            dynamoLocal().deleteTable("system");
-        } catch (ResourceNotFoundException e) {
+        deleteTable("system");
+        createTable("system");
+    }
 
-        }
+    private static void createTable(String tableName) {
         dynamoLocal().createTable(new CreateTableRequest()
-                .withTableName("system")
+                .withTableName(tableName)
                 .withProvisionedThroughput(new ProvisionedThroughput().withReadCapacityUnits(1l).withWriteCapacityUnits(1l))
                 .withAttributeDefinitions(new AttributeDefinition()
                                 .withAttributeName("pk")
@@ -55,6 +54,14 @@ public class SystemIntegrationTest {
                         new KeySchemaElement().withAttributeName("sk")
                                 .withKeyType(KeyType.RANGE))
         );
+    }
+
+    private static void deleteTable(String tableName) {
+        try {
+            dynamoLocal().deleteTable(tableName);
+        } catch (ResourceNotFoundException e) {
+
+        }
     }
 
 

@@ -1,5 +1,6 @@
 package antessio.dynamoplus.dynamodb;
 
+import antessio.dynamoplus.dynamodb.bean.DynamoDbUpdateBean;
 import antessio.dynamoplus.dynamodb.bean.Record;
 import antessio.dynamoplus.dynamodb.bean.RecordBuilder;
 import antessio.dynamoplus.utils.ConversionUtils;
@@ -51,15 +52,25 @@ public final class RecordToDynamoDbConverter {
                 .build();
     }
 
-    public static Map<String, AttributeValueUpdate> toDynamoUpdate(Record record) {
-        return toDynamo(record)
+    public static DynamoDbUpdateBean toDynamoUpdate(Record record) {
+
+        Map<String, AttributeValue> attributeValueMap = toDynamo(record);
+        Map<String, AttributeValue> keyMap = attributeValueMap
                 .entrySet()
                 .stream()
+                .filter(e -> e.getKey().equals("pk") || e.getKey().equals("sk"))
+                .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+        ;
+        Map<String, AttributeValueUpdate> updateMap = attributeValueMap
+                .entrySet()
+                .stream()
+                .filter(e -> !e.getKey().equals("pk") && !e.getKey().equals("sk"))
                 .map(e -> entry(e.getKey(),
                         new AttributeValueUpdate()
                                 .withAction(AttributeAction.PUT)
                                 .withValue(e.getValue()),
                         AttributeValueUpdate.class))
                 .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return new DynamoDbUpdateBean(keyMap, updateMap);
     }
 }

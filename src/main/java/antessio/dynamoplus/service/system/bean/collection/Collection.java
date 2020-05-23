@@ -1,4 +1,4 @@
-package antessio.dynamoplus.system.bean.collection;
+package antessio.dynamoplus.service.system.bean.collection;
 
 import java.util.List;
 import java.util.Objects;

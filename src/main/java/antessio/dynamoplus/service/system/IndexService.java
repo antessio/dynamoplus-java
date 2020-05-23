@@ -1,4 +1,4 @@
-package antessio.dynamoplus.service;
+package antessio.dynamoplus.service.system;
 
 import antessio.dynamoplus.dynamodb.RecordFactory;
 import antessio.dynamoplus.dynamodb.bean.QueryBuilder;
@@ -7,10 +7,10 @@ import antessio.dynamoplus.dynamodb.bean.query.Eq;
 import antessio.dynamoplus.dynamodb.bean.query.PredicateBuilder;
 import antessio.dynamoplus.dynamodb.bean.query.QueryResultsWithCursor;
 import antessio.dynamoplus.dynamodb.impl.DynamoDbTableRepository;
-import antessio.dynamoplus.system.bean.collection.Collection;
-import antessio.dynamoplus.system.bean.collection.CollectionBuilder;
-import antessio.dynamoplus.system.bean.index.Index;
-import antessio.dynamoplus.system.bean.index.IndexBuilder;
+import antessio.dynamoplus.service.system.bean.collection.Collection;
+import antessio.dynamoplus.service.system.bean.collection.CollectionBuilder;
+import antessio.dynamoplus.service.system.bean.index.Index;
+import antessio.dynamoplus.service.system.bean.index.IndexBuilder;
 import antessio.dynamoplus.utils.ConversionUtils;
 
 import java.util.*;
@@ -57,13 +57,14 @@ public class IndexService {
     }
 
 
-    public Index getById(UUID id) {
+    public Optional<Index> getById(UUID id) {
         Index index = new IndexBuilder()
                 .uid(id)
                 .createIndex();
         Record record = RecordFactory.getInstance().masterRecordFromDocument(fromIndexToMap(index), INDEX_COLLECTION);
-        Record foundRecord = tableRepository.get(record.getPk(), record.getSk());
-        return fromMapToIndex(foundRecord.getDocument());
+        return tableRepository.get(record.getPk(), record.getSk())
+                .map(Record::getDocument)
+                .map(IndexService::fromMapToIndex);
     }
 
     public Optional<Index> getByCollectionName(String collectionName) {

@@ -1,25 +1,19 @@
-package antessio.dynamoplus.service;
+package antessio.dynamoplus.service.system;
 
 import antessio.dynamoplus.dynamodb.RecordFactory;
 import antessio.dynamoplus.dynamodb.bean.Record;
 import antessio.dynamoplus.dynamodb.impl.DynamoDbTableRepository;
-import antessio.dynamoplus.system.bean.collection.*;
+import antessio.dynamoplus.service.system.bean.collection.Collection;
+import antessio.dynamoplus.service.system.bean.collection.CollectionBuilder;
 import antessio.dynamoplus.utils.ConversionUtils;
 
 import java.util.Map;
+import java.util.Optional;
 
 import static antessio.dynamoplus.utils.MapUtil.entry;
-import static antessio.dynamoplus.utils.MapUtil.ofEntries;
 
 public class CollectionService {
 
-    public static final String NAME = "name";
-    public static final String ID_KEY = "id_key";
-    public static final String ATTRIBUTES = "attributes";
-    public static final String ATTRIBUTE_NAME = "name";
-    public static final String ATTRIBUTE_TYPE = "type";
-    public static final String ATTRIBUTE_SUB_ATTRIBUTES = "attributes";
-    public static final String ATTRIBUTE_CONSTRAINTS = "constraints";
 
     private static final Collection COLLECTION_METADATA = new CollectionBuilder()
             .idKey("name")
@@ -34,13 +28,6 @@ public class CollectionService {
     }
 
 
-    public static Map<String, Object> fromCollectionToMapMin(Collection collection) {
-        return ofEntries(
-                entry(NAME, collection.getName()),
-                entry(ID_KEY, collection.getIdKey())
-        );
-    }
-
     public static Map<String, Object> fromCollectionToMap(Collection collection) {
         return ConversionUtils.getInstance().convertObject(collection);
     }
@@ -50,13 +37,14 @@ public class CollectionService {
         return ConversionUtils.getInstance().convertMap(document, Collection.class);
     }
 
-    public Collection getCollectionByName(String name) {
+    public Optional<Collection> getCollectionByName(String name) {
         Collection collection = new CollectionBuilder()
                 .name(name)
                 .createCollection();
         Record record = RecordFactory.getInstance().masterRecordFromDocument(fromCollectionToMap(collection), COLLECTION_METADATA);
-        Record foundRecord = tableRepository.get(record.getPk(), record.getSk());
-        return fromMapToCollection(foundRecord.getDocument());
+        return tableRepository.get(record.getPk(), record.getSk())
+                .map(Record::getDocument)
+                .map(CollectionService::fromMapToCollection);
     }
 
     public Collection createCollection(Collection collection) {
@@ -79,8 +67,7 @@ public class CollectionService {
                 .name(name)
                 .createCollection();
         Record record = RecordFactory.getInstance().masterRecordFromDocument(fromCollectionToMap(collection), COLLECTION_METADATA);
-        Record foundRecord = tableRepository.delete(record.getPk(), record.getSk());
-        Collection collectionRemoved = fromMapToCollection(foundRecord.getDocument());
+        tableRepository.delete(record.getPk(), record.getSk());
     }
 
 

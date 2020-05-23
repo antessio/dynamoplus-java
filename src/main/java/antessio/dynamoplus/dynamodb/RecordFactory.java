@@ -4,8 +4,8 @@ import antessio.dynamoplus.dynamodb.bean.Record;
 import antessio.dynamoplus.dynamodb.bean.RecordBuilder;
 
 import antessio.dynamoplus.utils.DynamoPlusUtils;
-import antessio.dynamoplus.system.bean.collection.Collection;
-import antessio.dynamoplus.system.bean.index.Index;
+import antessio.dynamoplus.service.system.bean.collection.Collection;
+import antessio.dynamoplus.service.system.bean.index.Index;
 
 
 import java.util.Map;

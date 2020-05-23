@@ -1,8 +1,8 @@
-package antessio.dynamoplus.system.bean.index;
+package antessio.dynamoplus.service.system.bean.index;
 
 
-import antessio.dynamoplus.system.bean.collection.Collection;
-import antessio.dynamoplus.system.bean.collection.CollectionBuilder;
+import antessio.dynamoplus.service.system.bean.collection.Collection;
+import antessio.dynamoplus.service.system.bean.collection.CollectionBuilder;
 
 import java.util.List;
 import java.util.UUID;

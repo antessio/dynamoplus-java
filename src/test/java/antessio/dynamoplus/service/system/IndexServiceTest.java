@@ -1,14 +1,15 @@
-package antessio.dynamoplus.service;
+package antessio.dynamoplus.service.system;
 
 import antessio.dynamoplus.dynamodb.bean.Query;
 import antessio.dynamoplus.dynamodb.bean.Record;
 import antessio.dynamoplus.dynamodb.bean.RecordBuilder;
 import antessio.dynamoplus.dynamodb.bean.query.QueryResultsWithCursor;
 import antessio.dynamoplus.dynamodb.impl.DynamoDbTableRepository;
-import antessio.dynamoplus.system.bean.collection.AttributeBuilder;
-import antessio.dynamoplus.system.bean.collection.CollectionBuilder;
-import antessio.dynamoplus.system.bean.index.Index;
-import antessio.dynamoplus.system.bean.index.IndexBuilder;
+import antessio.dynamoplus.service.system.IndexService;
+import antessio.dynamoplus.service.system.bean.collection.AttributeBuilder;
+import antessio.dynamoplus.service.system.bean.collection.CollectionBuilder;
+import antessio.dynamoplus.service.system.bean.index.Index;
+import antessio.dynamoplus.service.system.bean.index.IndexBuilder;
 import org.assertj.core.internal.FieldByFieldComparator;
 import org.jeasy.random.EasyRandom;
 import org.junit.jupiter.api.AfterEach;
@@ -94,13 +95,14 @@ class IndexServiceTest {
         UUID id = UUID.randomUUID();
         Index index = randomIndex();
         Map<String, Object> document = IndexService.fromIndexToMap(index);
-        when(repoTable.get(any(), any())).thenReturn(generator.nextObject(RecordBuilder.class)
+        when(repoTable.get(any(), any())).thenReturn(Optional.of(generator.nextObject(RecordBuilder.class)
                 .withDocument(document)
-                .build());
+                .build()));
         //when
-        Index result = indexService.getById(id);
+        Optional<Index> result = indexService.getById(id);
         //then
         assertThat(result)
+                .get()
                 .usingComparator(new FieldByFieldComparator())
                 .isEqualToIgnoringGivenFields(index, "collection");
         verify(repoTable).get(eq("index#" + id), eq("index"));
@@ -170,9 +172,7 @@ class IndexServiceTest {
         UUID id = UUID.randomUUID();
         Index index = randomIndex();
         Map<String, Object> document = IndexService.fromIndexToMap(index);
-        when(repoTable.get(any(), any())).thenReturn(generator.nextObject(RecordBuilder.class)
-                .withDocument(document)
-                .build());
+        doNothing().when(repoTable).delete(any(), any());
         //when
         indexService.deleteIndexById(id);
         //then

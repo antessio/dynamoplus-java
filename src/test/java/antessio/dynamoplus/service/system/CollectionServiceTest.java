@@ -1,10 +1,12 @@
-package antessio.dynamoplus.service;
+package antessio.dynamoplus.service.system;
 
 import antessio.dynamoplus.dynamodb.bean.Record;
 import antessio.dynamoplus.dynamodb.bean.RecordBuilder;
 import antessio.dynamoplus.dynamodb.impl.DynamoDbTableRepository;
-import antessio.dynamoplus.system.bean.collection.*;
-import antessio.dynamoplus.system.bean.collection.Collection;
+import antessio.dynamoplus.service.system.bean.collection.AttributeBuilder;
+import antessio.dynamoplus.service.system.bean.collection.Collection;
+import antessio.dynamoplus.service.system.bean.collection.CollectionAttributeConstraint;
+import antessio.dynamoplus.service.system.bean.collection.CollectionBuilder;
 import org.assertj.core.groups.Tuple;
 import org.jeasy.random.EasyRandom;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,14 +39,14 @@ class CollectionServiceTest {
         //given
         Collection collection = randomCollection();
         Map<String, Object> document = CollectionService.fromCollectionToMap(collection);
-        when(tableRepository.get(any(), any())).thenReturn(generator.nextObject(RecordBuilder.class)
+        when(tableRepository.get(any(), any())).thenReturn(Optional.of(generator.nextObject(RecordBuilder.class)
                 .withDocument(document)
-                .build());
+                .build()));
         //when
-        Collection result = collectionService.getCollectionByName(collection.getName());
+        Optional<Collection> result = collectionService.getCollectionByName(collection.getName());
         //then
-        assertThat(result).isEqualToIgnoringGivenFields(collection, "attributes");
-        assertThat(result.getAttributes())
+        assertThat(result).get().isEqualToIgnoringGivenFields(collection, "attributes");
+        assertThat(result.get().getAttributes())
                 .extracting(a -> tuple(a.getName(), a.getType(), a.getConstraints()))
                 .containsOnly(collection.getAttributes().stream().map(a -> tuple(a.getName(), a.getType(), a.getConstraints())).toArray(Tuple[]::new));
         verify(tableRepository).get(eq("collection#" + collection.getName()), eq("collection"));
@@ -99,9 +101,7 @@ class CollectionServiceTest {
         //given
         Collection collection = randomCollection();
         Map<String, Object> document = CollectionService.fromCollectionToMap(collection);
-        when(tableRepository.delete(any(), any())).thenReturn(generator.nextObject(RecordBuilder.class)
-                .withDocument(document)
-                .build());
+        doNothing().when(tableRepository).delete(any(), any());
         //when
         collectionService.delete(collection.getName());
         //then

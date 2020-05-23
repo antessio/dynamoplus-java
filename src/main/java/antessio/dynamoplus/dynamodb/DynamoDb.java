@@ -7,15 +7,13 @@ import java.util.Map;
 
 public class DynamoDb {
     private final AmazonDynamoDB client;
-    private final String tableName;
 
 
-    public DynamoDb(AmazonDynamoDB client, String tableName) {
+    public DynamoDb(AmazonDynamoDB client) {
         this.client = client;
-        this.tableName = tableName;
     }
 
-    public Map<String, AttributeValue> getItem(Map<String, AttributeValue> key) {
+    public Map<String, AttributeValue> getItem(Map<String, AttributeValue> key, String tableName) {
         GetItemRequest request = new GetItemRequest()
                 .withTableName(tableName)
                 .withAttributesToGet("pk", "sk", "data", "document")
@@ -26,7 +24,7 @@ public class DynamoDb {
     public QueryResult query(Map<String, Condition> keyConditions,
                              Map<String, AttributeValue> exclusiveStartKey,
                              Integer limit,
-                             String indexName) {
+                             String indexName, String tableName) {
         QueryRequest queryRequest = new QueryRequest()
                 .withTableName(tableName)
                 .withKeyConditions(keyConditions)
@@ -36,7 +34,7 @@ public class DynamoDb {
         return client.query(queryRequest);
     }
 
-    public Map<String, AttributeValue> insert(Map<String, AttributeValue> item) {
+    public Map<String, AttributeValue> insert(Map<String, AttributeValue> item, String tableName) {
         PutItemRequest putItemRequest = new PutItemRequest()
                 .withItem(item)
                 .withReturnValues(ReturnValue.ALL_OLD)
@@ -46,19 +44,25 @@ public class DynamoDb {
         return item;
     }
 
-    public Map<String, AttributeValue> update(Map<String, AttributeValueUpdate> item) {
+    public Map<String, AttributeValue> update(Map<String, AttributeValue> key, Map<String, AttributeValueUpdate> item, String tableName) {
         UpdateItemRequest updateItemRequest = new UpdateItemRequest()
                 .withTableName(tableName)
                 .withReturnValues(ReturnValue.ALL_NEW)
+                .withKey(key)
                 .withAttributeUpdates(item);
         return client.updateItem(updateItemRequest).getAttributes();
     }
 
-    public Map<String, AttributeValue> delete(Map<String, AttributeValue> key) {
+    public void delete(Map<String, AttributeValue> key, String tableName) {
         DeleteItemRequest deleteItemRequest = new DeleteItemRequest()
                 .withTableName(tableName)
+                .withReturnValues(ReturnValue.ALL_OLD)
                 .withKey(key);
-        return client.deleteItem(deleteItemRequest).getAttributes();
+        DeleteItemResult result = client.deleteItem(deleteItemRequest);
+        if (result.getSdkHttpMetadata().getHttpStatusCode() != 200) {
+            throw new RuntimeException(String.format("record not deleted (%d)", result.getSdkHttpMetadata().getHttpStatusCode()));
+        }
+        ;
     }
 
 }

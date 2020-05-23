@@ -1,13 +1,24 @@
 package antessio.dynamoplus.utils;
 
+import antessio.dynamoplus.service.system.bean.client_authorization.ClientAuthorization;
+import antessio.dynamoplus.service.system.bean.client_authorization.ClientAuthorizationApiKey;
+import antessio.dynamoplus.service.system.bean.client_authorization.ClientAuthorizationHttpSignature;
+import antessio.dynamoplus.service.system.bean.client_authorization.ClientAuthorizationInterface;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
 import java.io.IOException;
 import java.util.Map;
+
+import static antessio.dynamoplus.service.system.bean.client_authorization.ClientAuthorizationInterface.*;
 
 public final class ConversionUtils {
     private ObjectMapper objectMapper;
@@ -17,6 +28,10 @@ public final class ConversionUtils {
         objectMapper = new ObjectMapper();
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         objectMapper.setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
+        SimpleModule module = new SimpleModule();
+        module.addDeserializer(ClientAuthorizationInterface.class, new ClientAuthorizationDeserializer(ClientAuthorizationInterface.class));
+        objectMapper.registerModule(module);
+
     }
 
     public static ConversionUtils getInstance() {
@@ -49,6 +64,29 @@ public final class ConversionUtils {
             });
         } catch (IOException e) {
             throw new RuntimeException("unable deserialize document as json", e);
+        }
+    }
+
+    private static class ClientAuthorizationDeserializer extends StdDeserializer<ClientAuthorizationInterface> {
+
+        protected ClientAuthorizationDeserializer(Class<?> vc) {
+            super(vc);
+        }
+
+        @Override
+        public ClientAuthorizationInterface deserialize(JsonParser jsonParser,
+                                                        DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+            ObjectMapper mapper = (ObjectMapper) jsonParser.getCodec();
+            ObjectNode root = mapper.readTree(jsonParser);
+
+            ClientAuthorizationType clientAuthorizationType = ClientAuthorizationType.valueOf(root.get("type").asText());
+            switch (clientAuthorizationType) {
+                case API_KEY:
+                    return mapper.readValue(root.toString(), ClientAuthorizationApiKey.class);
+                case HTTP_SIGNATURE:
+                    return mapper.readValue(root.toString(), ClientAuthorizationHttpSignature.class);
+            }
+            return null;
         }
     }
 }

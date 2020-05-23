@@ -20,52 +20,51 @@ import java.util.stream.Collectors;
 public class DynamoDbTableRepository implements DynamoDbRepository {
     public static final String SK_DATA_INDEX = "sk-data-index";
     private final DynamoDb dynamoDb;
+    private final String tableName;
 
-    public DynamoDbTableRepository(DynamoDb dynamoDb) {
+    public DynamoDbTableRepository(DynamoDb dynamoDb, String tableName) {
         this.dynamoDb = dynamoDb;
+        this.tableName = tableName;
     }
 
     @Override
     public Record create(Record r) {
         return Optional.of(r)
                 .map(RecordToDynamoDbConverter::toDynamo)
-                .map(dynamoDb::insert)
+                .map(item -> dynamoDb.insert(item, tableName))
                 .map(RecordToDynamoDbConverter::fromDynamo)
                 .orElseThrow(() -> new RuntimeException("invalid record"));
 
-    }
-
-    @Override
-    public Record get(String pk, String sk) {
-        return Optional.of(RecordBuilder.aRecord()
-                .withPk(pk)
-                .withSk(sk)
-                .build())
-                .map(RecordToDynamoDbConverter::toDynamo)
-                .map(dynamoDb::getItem)
-                .map(RecordToDynamoDbConverter::fromDynamo)
-                .orElseThrow(() -> new RuntimeException("invalid record"));
     }
 
     @Override
     public Record update(Record r) {
         return Optional.of(r)
                 .map(RecordToDynamoDbConverter::toDynamoUpdate)
-                .map(dynamoDb::update)
+                .map(item -> dynamoDb.update(item.getKey(), item.getValue(), tableName))
                 .map(RecordToDynamoDbConverter::fromDynamo)
                 .orElseThrow(() -> new RuntimeException("invalid record"));
     }
 
     @Override
-    public Record delete(String pk, String sk) {
+    public Optional<Record> get(String pk, String sk) {
         return Optional.of(RecordBuilder.aRecord()
                 .withPk(pk)
                 .withSk(sk)
                 .build())
                 .map(RecordToDynamoDbConverter::toDynamo)
-                .map(dynamoDb::delete)
-                .map(RecordToDynamoDbConverter::fromDynamo)
-                .orElseThrow(() -> new RuntimeException("invalid record"));
+                .map(key -> dynamoDb.getItem(key, tableName))
+                .map(RecordToDynamoDbConverter::fromDynamo);
+    }
+
+    @Override
+    public void delete(String pk, String sk) {
+        Optional.of(RecordBuilder.aRecord()
+                .withPk(pk)
+                .withSk(sk)
+                .build())
+                .map(RecordToDynamoDbConverter::toDynamo)
+                .ifPresent(key -> dynamoDb.delete(key, tableName));
     }
 
     @Override
@@ -117,7 +116,7 @@ public class DynamoDbTableRepository implements DynamoDbRepository {
         Map<String, AttributeValue> exclusiveStartKey = Optional.ofNullable(query.getStartFrom())
                 .map(RecordToDynamoDbConverter::toDynamo)
                 .orElse(null);
-        QueryResult queryResult = dynamoDb.query(condition, exclusiveStartKey, query.getLimit(), SK_DATA_INDEX);
+        QueryResult queryResult = dynamoDb.query(condition, exclusiveStartKey, query.getLimit(), SK_DATA_INDEX, tableName);
         return new QueryResultsWithCursor(
                 queryResult.getItems()
                         .stream()

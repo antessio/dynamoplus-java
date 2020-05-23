@@ -1,10 +1,10 @@
 package antessio.dynamoplus.dynamodb;
 
 import antessio.dynamoplus.dynamodb.bean.Record;
-import antessio.dynamoplus.system.bean.collection.Collection;
-import antessio.dynamoplus.system.bean.collection.CollectionBuilder;
-import antessio.dynamoplus.system.bean.index.Index;
-import antessio.dynamoplus.system.bean.index.IndexBuilder;
+import antessio.dynamoplus.service.system.bean.collection.Collection;
+import antessio.dynamoplus.service.system.bean.collection.CollectionBuilder;
+import antessio.dynamoplus.service.system.bean.index.Index;
+import antessio.dynamoplus.service.system.bean.index.IndexBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
