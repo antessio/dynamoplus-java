@@ -1,5 +1,6 @@
 package antessio.dynamoplus.utils;
 
+import antessio.dynamoplus.service.bean.Document;
 import antessio.dynamoplus.service.system.bean.client_authorization.ClientAuthorization;
 import antessio.dynamoplus.service.system.bean.client_authorization.ClientAuthorizationApiKey;
 import antessio.dynamoplus.service.system.bean.client_authorization.ClientAuthorizationHttpSignature;
@@ -41,21 +42,30 @@ public final class ConversionUtils {
         return instance;
     }
 
-    public <T> Map<String, Object> convertObject(T obj) {
-        return objectMapper.convertValue(obj, new TypeReference<Map<String, Object>>() {
-        });
+    public <T> Document convertObject(T obj) {
+        return new Document(objectMapper.convertValue(obj, new TypeReference<Map<String, Object>>() {
+        })
+        );
+    }
+
+    public <T> T convertDocument(Document document, Class<T> cls) {
+        return convertMap(document.getDict(), cls);
     }
 
     public <T> T convertMap(Map<String, Object> m, Class<T> cls) {
         return objectMapper.convertValue(m, cls);
     }
 
-    public String convertToJson(Map<String, Object> document) {
+    private String convertToJson(Map<String, Object> document) {
         try {
             return objectMapper.writeValueAsString(document);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("unable serialize document as json", e);
         }
+    }
+
+    public String convertToJson(Document document) {
+        return convertToJson(document.getDict());
     }
 
     public Map<String, Object> fromJson(String document) {

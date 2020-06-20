@@ -12,5 +12,5 @@ Both tables have:
 
 DynamoPlus uses a separate Dynamo DB table to stores useful metadata to build Dynamo DB record using the GSI overloading. 
 
-Basically once a document is stored in the `domain` table, the record is processed (using Dynamo DB streams or other asynchronous methods) and for each `index` found for its `collection` a new record is created to store duplicated data needed for indexing through Global Secondary Index. 
+Basically once a document is stored in the `domain` table, the record is processed (using Dynamo DB streams or other asynchronous methods) and for each `index` found for its `collection` create a new record to store duplicated data needed for indexing through Global Secondary Index. 
 

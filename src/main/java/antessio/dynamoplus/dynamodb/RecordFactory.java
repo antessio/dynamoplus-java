@@ -3,6 +3,7 @@ package antessio.dynamoplus.dynamodb;
 import antessio.dynamoplus.dynamodb.bean.Record;
 import antessio.dynamoplus.dynamodb.bean.RecordBuilder;
 
+import antessio.dynamoplus.service.bean.Document;
 import antessio.dynamoplus.utils.DynamoPlusUtils;
 import antessio.dynamoplus.service.system.bean.collection.Collection;
 import antessio.dynamoplus.service.system.bean.index.Index;
@@ -26,7 +27,7 @@ public final class RecordFactory {
         return instance;
     }
 
-    public Record masterRecordFromDocument(Map<String, Object> document, Collection collection) {
+    public Record masterRecordFromDocument(Document document, Collection collection) {
         String idKey = getIdKeyFromCollection(document, collection)
                 .orElseThrow(() -> new RuntimeException("the document have no value for key " + collection.getIdKey()));
         String sk = collection.getName();
@@ -40,14 +41,14 @@ public final class RecordFactory {
                 .build();
     }
 
-    private Optional<String> getIdKeyFromCollection(Map<String, Object> document, Collection collection) {
+    private Optional<String> getIdKeyFromCollection(Document document, Collection collection) {
         return DynamoPlusUtils.getValueRecursively(collection.getIdKey(), document)
                 .filter(o -> o instanceof String)
                 .map(String.class::cast);
     }
 
 
-    public Record indexingRecordFromDocument(Map<String, Object> document, Index index) {
+    public Record indexingRecordFromDocument(Document document, Index index) {
         Collection collection = index.getCollection();
         Optional<String> maybeIdKey = getIdKeyFromCollection(document, collection);
 
@@ -66,7 +67,7 @@ public final class RecordFactory {
                 .build();
     }
 
-    private Optional<String> getOrdering_key(Map<String, Object> document, String orderingKey) {
+    private Optional<String> getOrdering_key(Document document, String orderingKey) {
         return Optional.ofNullable(orderingKey)
                 .flatMap(k -> DynamoPlusUtils.getValueRecursively(k, document)
                         .filter(o -> o instanceof Long)

@@ -33,14 +33,14 @@ public class IndexServiceIntegrationTest extends IntegrationTest {
     @Test
     void testInsertAndLoadIndex() {
         //given
-        Index toInsert = new IndexBuilder()
-                .uid(UUID.randomUUID())
-                .collection(new CollectionBuilder()
-                        .idKey("id")
-                        .name("test")
-                        .createCollection())
-                .conditions(Collections.singletonList("name"))
-                .createIndex();
+        Index toInsert = IndexBuilder.anIndex()
+                .withUid(UUID.randomUUID())
+                .withCollection(CollectionBuilder.aCollection()
+                        .withIdKey("id")
+                        .withName("test")
+                        .build())
+                .withConditions(Collections.singletonList("name"))
+                .build();
         //when
         Index indexCreated = indexService.createIndex(toInsert);
         //then

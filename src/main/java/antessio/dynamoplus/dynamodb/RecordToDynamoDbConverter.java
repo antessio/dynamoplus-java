@@ -3,6 +3,7 @@ package antessio.dynamoplus.dynamodb;
 import antessio.dynamoplus.dynamodb.bean.DynamoDbUpdateBean;
 import antessio.dynamoplus.dynamodb.bean.Record;
 import antessio.dynamoplus.dynamodb.bean.RecordBuilder;
+import antessio.dynamoplus.service.bean.Document;
 import antessio.dynamoplus.utils.ConversionUtils;
 import com.amazonaws.services.dynamodbv2.document.ItemUtils;
 import com.amazonaws.services.dynamodbv2.model.AttributeAction;
@@ -43,7 +44,11 @@ public final class RecordToDynamoDbConverter {
         String pk = item.get("pk").getS();
         String sk = item.get("sk").getS();
         String data = item.get("data").getS();
-        Map<String, Object> document = ConversionUtils.getInstance().fromJson(item.get("document").getS());
+        Document document = Optional.ofNullable(item.get("document"))
+                .map(AttributeValue::getS)
+                .map(ConversionUtils.getInstance()::fromJson)
+                .map(Document::new)
+                .orElseThrow(() -> new RuntimeException("document value not found from dynamo"));
         return RecordBuilder.aRecord()
                 .withDocument(document)
                 .withData(data)

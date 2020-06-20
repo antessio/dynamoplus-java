@@ -3,10 +3,11 @@ package antessio.dynamoplus.service.system;
 import antessio.dynamoplus.dynamodb.RecordFactory;
 import antessio.dynamoplus.dynamodb.bean.QueryBuilder;
 import antessio.dynamoplus.dynamodb.bean.Record;
-import antessio.dynamoplus.dynamodb.bean.query.Eq;
-import antessio.dynamoplus.dynamodb.bean.query.PredicateBuilder;
+import antessio.dynamoplus.common.query.Eq;
+import antessio.dynamoplus.common.query.PredicateBuilder;
 import antessio.dynamoplus.dynamodb.bean.query.QueryResultsWithCursor;
 import antessio.dynamoplus.dynamodb.impl.DynamoDbTableRepository;
+import antessio.dynamoplus.service.bean.Document;
 import antessio.dynamoplus.service.system.bean.collection.Collection;
 import antessio.dynamoplus.service.system.bean.collection.CollectionBuilder;
 import antessio.dynamoplus.service.system.bean.index.Index;
@@ -17,15 +18,15 @@ import java.util.*;
 
 public class IndexService {
 
-    public static final Collection INDEX_COLLECTION = new CollectionBuilder()
-            .name("index")
-            .idKey("uid")
-            .autoGenerateId(true)
-            .createCollection();
-    public static final Index INDEX_FOR_INDEX_COLLECTION = new IndexBuilder()
-            .collection(INDEX_COLLECTION)
-            .conditions(new ArrayList<>(Arrays.asList("collection.name", "name")))
-            .createIndex();
+    public static final Collection INDEX_COLLECTION = CollectionBuilder.aCollection()
+            .withName("index")
+            .withIdKey("uid")
+            .withAutoGenerateId(true)
+            .build();
+    public static final Index INDEX_FOR_INDEX_COLLECTION = IndexBuilder.anIndex()
+            .withCollection(INDEX_COLLECTION)
+            .withConditions(new ArrayList<>(Arrays.asList("collection.name", "name")))
+            .build();
     private final DynamoDbTableRepository tableRepository;
 
 
@@ -33,24 +34,24 @@ public class IndexService {
         this.tableRepository = tableRepository;
     }
 
-    public static Index fromMapToIndex(Map<String, Object> document) {
-        return ConversionUtils.getInstance().convertMap(document, Index.class);
+    public static Index fromMapToIndex(Document document) {
+        return ConversionUtils.getInstance().convertDocument(document, Index.class);
     }
 
 
-    public static Map<String, Object> fromIndexToMap(Index index) {
+    public static Document fromIndexToMap(Index index) {
         return ConversionUtils.getInstance().convertObject(index);
     }
 
     public Index createIndex(Index index) {
-        Map<String, Object> indexDocument = fromIndexToMap(index);
+        Document indexDocument = fromIndexToMap(index);
         Record record = RecordFactory.getInstance().masterRecordFromDocument(indexDocument, INDEX_COLLECTION);
         Record recordCreated = tableRepository.create(record);
         return fromMapToIndex(recordCreated.getDocument());
     }
 
     public void createGsiRows(Index index) {
-        Map<String, Object> indexAsDocument = fromIndexToMap(index);
+        Document indexAsDocument = fromIndexToMap(index);
         Record record = RecordFactory.getInstance()
                 .indexingRecordFromDocument(indexAsDocument, INDEX_FOR_INDEX_COLLECTION);
         tableRepository.create(record);
@@ -58,9 +59,9 @@ public class IndexService {
 
 
     public Optional<Index> getById(UUID id) {
-        Index index = new IndexBuilder()
-                .uid(id)
-                .createIndex();
+        Index index = IndexBuilder.anIndex()
+                .withUid(id)
+                .build();
         Record record = RecordFactory.getInstance().masterRecordFromDocument(fromIndexToMap(index), INDEX_COLLECTION);
         return tableRepository.get(record.getPk(), record.getSk())
                 .map(Record::getDocument)
@@ -68,9 +69,9 @@ public class IndexService {
     }
 
     public Optional<Index> getByCollectionName(String collectionName) {
-        Index index = new IndexBuilder()
-                .collection(collectionName)
-                .createIndex();
+        Index index = IndexBuilder.anIndex()
+                .withCollection(CollectionBuilder.aCollection().withName(collectionName).build())
+                .build();
         Record record = RecordFactory.getInstance().indexingRecordFromDocument(fromIndexToMap(index), INDEX_FOR_INDEX_COLLECTION);
         QueryResultsWithCursor results = tableRepository.query(QueryBuilder.aQuery()
                 .withPartitionKey(record.getSk())
@@ -82,10 +83,10 @@ public class IndexService {
     }
 
     public Optional<Index> getByCollectionNameAndName(String collectionName, String name) {
-        Index index = new IndexBuilder()
-                .collection(collectionName)
-                .name(name)
-                .createIndex();
+        Index index = IndexBuilder.anIndex()
+                .withCollection(CollectionBuilder.aCollection().withName(collectionName).build())
+                .withName(name)
+                .build();
         Record record = RecordFactory.getInstance().indexingRecordFromDocument(fromIndexToMap(index), INDEX_FOR_INDEX_COLLECTION);
         QueryResultsWithCursor results = tableRepository.query(QueryBuilder.aQuery()
                 .withPartitionKey(record.getSk())
@@ -103,12 +104,15 @@ public class IndexService {
     }
 
     public void deleteIndexById(UUID id) {
-        Index index = new IndexBuilder()
-                .uid(id)
-                .createIndex();
+        Index index = IndexBuilder.anIndex()
+                .withUid(id)
+                .build();
         Record record = RecordFactory.getInstance().masterRecordFromDocument(fromIndexToMap(index), INDEX_COLLECTION);
         tableRepository.delete(record.getPk(), record.getSk());
     }
 
 
+    public Index updateIndex(Index indexToUpdate) {
+        return null;
+    }
 }

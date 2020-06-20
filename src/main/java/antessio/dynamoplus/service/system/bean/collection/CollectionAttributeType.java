@@ -5,7 +5,8 @@ public enum CollectionAttributeType {
     NUMBER(2),
     OBJECT(3),
     ARRAY(4),
-    DATE(5);
+    DATE(5),
+    BOOLEAN(6);
 
     private final int typeCode;
 

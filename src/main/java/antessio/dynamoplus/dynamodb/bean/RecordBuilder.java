@@ -1,12 +1,13 @@
 package antessio.dynamoplus.dynamodb.bean;
 
-import java.util.Map;
+import antessio.dynamoplus.service.bean.Document;
+
 
 public final class RecordBuilder {
     private String pk;
     private String sk;
     private String data;
-    private Map<String, Object> document;
+    private Document document;
 
     private RecordBuilder() {
     }
@@ -30,7 +31,7 @@ public final class RecordBuilder {
         return this;
     }
 
-    public RecordBuilder withDocument(Map<String, Object> document) {
+    public RecordBuilder withDocument(Document document) {
         this.document = document;
         return this;
     }

@@ -1,6 +1,6 @@
 package antessio.dynamoplus.dynamodb.bean;
 
-import antessio.dynamoplus.dynamodb.bean.query.Predicate;
+import antessio.dynamoplus.common.query.Predicate;
 
 public final class QueryBuilder {
     private String partitionKey;

@@ -3,46 +3,96 @@ package antessio.dynamoplus.service.system;
 import antessio.dynamoplus.dynamodb.RecordFactory;
 import antessio.dynamoplus.dynamodb.bean.Record;
 import antessio.dynamoplus.dynamodb.impl.DynamoDbTableRepository;
+import antessio.dynamoplus.service.bean.Document;
 import antessio.dynamoplus.service.system.bean.client_authorization.ClientAuthorizationBuilder;
 import antessio.dynamoplus.service.system.bean.client_authorization.ClientAuthorizationInterface;
-import antessio.dynamoplus.service.system.bean.collection.AttributeBuilder;
+import antessio.dynamoplus.service.system.bean.collection.*;
 import antessio.dynamoplus.service.system.bean.collection.Collection;
-import antessio.dynamoplus.service.system.bean.collection.CollectionAttributeType;
-import antessio.dynamoplus.service.system.bean.collection.CollectionBuilder;
 import antessio.dynamoplus.utils.ConversionUtils;
 
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Stream;
 
 public class ClientAuthorizationService {
 
+    private static final List<Attribute> CLIENT_AUTHORIZATION_MANDATORY_ATTRIBUTES = Arrays.asList(
+            new AttributeBuilder()
+                    .attributeName("client_id")
+                    .attributeType(CollectionAttributeType.STRING)
+                    .constraints(Collections.singletonList(CollectionAttributeConstraint.NOT_NULL))
+                    .build(),
+            new AttributeBuilder()
+                    .attributeName("type")
+                    .constraints(Collections.singletonList(CollectionAttributeConstraint.NOT_NULL))
+                    .attributeType(CollectionAttributeType.STRING)
+                    .build(),
+            new AttributeBuilder()
+                    .attributeName("client_scopes")
+                    .constraints(Collections.singletonList(CollectionAttributeConstraint.NOT_NULL))
+                    .attributeType(CollectionAttributeType.ARRAY)
+                    .attributes(Arrays.asList(
+                            new AttributeBuilder()
+                                    .attributeName("scope_type")
+                                    .constraints(Collections.singletonList(CollectionAttributeConstraint.NOT_NULL))
+                                    .attributeType(CollectionAttributeType.STRING)
+                                    .build(),
+                            new AttributeBuilder()
+                                    .attributeName("collection_name")
+                                    .constraints(Collections.singletonList(CollectionAttributeConstraint.NOT_NULL))
+                                    .attributeType(CollectionAttributeType.STRING)
+                                    .build()
+                    ))
+                    .build()
+    );
+    public static final Collection CLIENT_AUTHORIZATION_API_KEY = createClientAuthorizationCollection(
+            addAll(
+                    CLIENT_AUTHORIZATION_MANDATORY_ATTRIBUTES,
+                    Arrays.asList(
+                            new AttributeBuilder()
+                                    .attributeName("api_key")
+                                    .attributeType(CollectionAttributeType.STRING)
+                                    .constraints(Collections.singletonList(CollectionAttributeConstraint.NOT_NULL))
+                                    .build(),
+                            new AttributeBuilder()
+                                    .attributeName("whiteListHosts")
+                                    .attributeType(CollectionAttributeType.ARRAY)
+                                    .build()
+                    )
+            )
+    );
+    public static final Collection CLIENT_AUTHORIZATION_HTTP_SIGNATURE = createClientAuthorizationCollection(
+            addAll(
+                    CLIENT_AUTHORIZATION_MANDATORY_ATTRIBUTES,
+                    Collections.singletonList(
+                            new AttributeBuilder()
+                                    .attributeName("client_public_key")
+                                    .attributeType(CollectionAttributeType.STRING)
+                                    .constraints(Collections.singletonList(CollectionAttributeConstraint.NOT_NULL))
+                                    .build()
+                    )
+            )
+    );
 
-    private static final Collection CLIENT_AUTHORIZATION_METADATA = new CollectionBuilder()
-            .idKey("client_id")
-            .name("client_authorization")
-            .autoGenerateId(false)
-            .attributes(Arrays.asList(
-                    new AttributeBuilder()
-                            .attributeName("client_id")
-                            .attributeType(CollectionAttributeType.STRING)
-                            .build(),
-                    new AttributeBuilder()
-                            .attributeName("client_scopes")
-                            .attributeType(CollectionAttributeType.ARRAY)
-                            .attributes(Arrays.asList(
-                                    new AttributeBuilder()
-                                            .attributeName("scope_type")
-                                            .attributeType(CollectionAttributeType.STRING)
-                                            .build(),
-                                    new AttributeBuilder()
-                                            .attributeName("collection_name")
-                                            .attributeType(CollectionAttributeType.STRING)
-                                            .build()
-                            ))
-                            .build()
-            ))
-            .createCollection();
+    private static <T> List<T> addAll(List<T>... clientAuthorizationMandatoryAttributes) {
+        List<T> result = new ArrayList<>();
+        for (List<T> l : clientAuthorizationMandatoryAttributes) {
+            result.addAll(l);
+        }
+        return result;
+    }
+
+    public static final Collection CLIENT_AUTHORIZATION_METADATA = createClientAuthorizationCollection(CLIENT_AUTHORIZATION_MANDATORY_ATTRIBUTES);
+
+    private static Collection createClientAuthorizationCollection(
+            List<Attribute> clientAuthorizationMandatoryAttributes) {
+        return CollectionBuilder.aCollection()
+                .withIdKey("client_id")
+                .withName("client_authorization")
+                .withAutoGenerateId(false)
+                .withAttributes(clientAuthorizationMandatoryAttributes)
+                .build();
+    }
+
 
     private final DynamoDbTableRepository tableRepository;
 
@@ -50,14 +100,22 @@ public class ClientAuthorizationService {
         this.tableRepository = tableRepository;
     }
 
+    public static Optional<ClientAuthorizationInterface.ClientAuthorizationType> fromDocument(Document document) {
+        return Optional.of(document.get("type"))
+                .filter(o -> o instanceof String)
+                .map(o -> (String) o)
+                .map(String::toUpperCase)
+                .filter(s -> Stream.of(ClientAuthorizationInterface.ClientAuthorizationType.values()).anyMatch(t -> t.name().equalsIgnoreCase(s)))
+                .map(ClientAuthorizationInterface.ClientAuthorizationType::valueOf);
+    }
 
-    public static Map<String, Object> fromClientAuthorizationToMap(ClientAuthorizationInterface clientAuthorizationInterface) {
+    public static Document fromClientAuthorizationToMap(ClientAuthorizationInterface clientAuthorizationInterface) {
         return ConversionUtils.getInstance().convertObject(clientAuthorizationInterface);
     }
 
 
-    public static ClientAuthorizationInterface fromMapToClientAuthorization(Map<String, Object> document) {
-        return ConversionUtils.getInstance().convertMap(document, ClientAuthorizationInterface.class);
+    public static ClientAuthorizationInterface fromMapToClientAuthorization(Document document) {
+        return ConversionUtils.getInstance().convertDocument(document, ClientAuthorizationInterface.class);
     }
 
     public Optional<ClientAuthorizationInterface> getByClientId(String clientId) {
@@ -71,14 +129,14 @@ public class ClientAuthorizationService {
     }
 
     public ClientAuthorizationInterface create(ClientAuthorizationInterface clientAuthorizationInterface) {
-        Map<String, Object> collectionDocument = fromClientAuthorizationToMap(clientAuthorizationInterface);
+        Document collectionDocument = fromClientAuthorizationToMap(clientAuthorizationInterface);
         Record record = RecordFactory.getInstance().masterRecordFromDocument(collectionDocument, CLIENT_AUTHORIZATION_METADATA);
         Record recordCreated = tableRepository.create(record);
         return fromMapToClientAuthorization(recordCreated.getDocument());
     }
 
     public ClientAuthorizationInterface update(ClientAuthorizationInterface clientAuthorizationInterface) {
-        Map<String, Object> collectionDocument = fromClientAuthorizationToMap(clientAuthorizationInterface);
+        Document collectionDocument = fromClientAuthorizationToMap(clientAuthorizationInterface);
         Record record = RecordFactory.getInstance().masterRecordFromDocument(collectionDocument, CLIENT_AUTHORIZATION_METADATA);
         Record recordCreated = tableRepository.update(record);
         return fromMapToClientAuthorization(recordCreated.getDocument());

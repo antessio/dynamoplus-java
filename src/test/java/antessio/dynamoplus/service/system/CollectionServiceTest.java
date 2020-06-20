@@ -3,6 +3,7 @@ package antessio.dynamoplus.service.system;
 import antessio.dynamoplus.dynamodb.bean.Record;
 import antessio.dynamoplus.dynamodb.bean.RecordBuilder;
 import antessio.dynamoplus.dynamodb.impl.DynamoDbTableRepository;
+import antessio.dynamoplus.service.bean.Document;
 import antessio.dynamoplus.service.system.bean.collection.AttributeBuilder;
 import antessio.dynamoplus.service.system.bean.collection.Collection;
 import antessio.dynamoplus.service.system.bean.collection.CollectionAttributeConstraint;
@@ -38,7 +39,7 @@ class CollectionServiceTest {
     void testGetCollectionByName() {
         //given
         Collection collection = randomCollection();
-        Map<String, Object> document = CollectionService.fromCollectionToMap(collection);
+        Document document = CollectionService.fromCollectionToMap(collection);
         when(tableRepository.get(any(), any())).thenReturn(Optional.of(generator.nextObject(RecordBuilder.class)
                 .withDocument(document)
                 .build()));
@@ -56,7 +57,7 @@ class CollectionServiceTest {
     void testInsertNewCollection() {
         //given
         Collection collection = randomCollection();
-        Map<String, Object> document = CollectionService.fromCollectionToMap(collection);
+        Document document = CollectionService.fromCollectionToMap(collection);
         Record expectedRecord = RecordBuilder.aRecord()
                 .withPk("collection#" + collection.getName())
                 .withSk("collection")
@@ -78,7 +79,7 @@ class CollectionServiceTest {
     void testUpdateCollection() {
         //given
         Collection collection = randomCollection();
-        Map<String, Object> document = CollectionService.fromCollectionToMap(collection);
+        Document document = CollectionService.fromCollectionToMap(collection);
         Record expectedRecord = RecordBuilder.aRecord()
                 .withPk("collection#" + collection.getName())
                 .withSk("collection")
@@ -100,7 +101,7 @@ class CollectionServiceTest {
     void testDeleteCollectionByName() {
         //given
         Collection collection = randomCollection();
-        Map<String, Object> document = CollectionService.fromCollectionToMap(collection);
+        Document document = CollectionService.fromCollectionToMap(collection);
         doNothing().when(tableRepository).delete(any(), any());
         //when
         collectionService.delete(collection.getName());
@@ -110,7 +111,7 @@ class CollectionServiceTest {
 
     private Collection randomCollection() {
         return generator.nextObject(CollectionBuilder.class)
-                .attributes(generator.objects(AttributeBuilder.class, 4)
+                .withAttributes(generator.objects(AttributeBuilder.class, 4)
                         .map(b -> b.constraints(
                                 generator.objects(CollectionAttributeConstraint.class, 1)
                                         .collect(toList()))
@@ -118,7 +119,7 @@ class CollectionServiceTest {
                                 .build())
                         .collect(toList())
                 )
-                .createCollection();
+                .build();
     }
 
 

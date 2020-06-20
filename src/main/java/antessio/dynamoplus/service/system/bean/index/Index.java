@@ -18,6 +18,7 @@ public class Index {
     public Index() {
     }
 
+
     public Index(UUID uid, String name, Collection collection, List<String> conditions, String orderingKey) {
         this.uid = uid;
         this.name = name;

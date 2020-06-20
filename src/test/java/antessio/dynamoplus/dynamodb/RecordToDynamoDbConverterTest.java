@@ -2,6 +2,7 @@ package antessio.dynamoplus.dynamodb;
 
 import antessio.dynamoplus.dynamodb.bean.Record;
 import antessio.dynamoplus.dynamodb.bean.RecordBuilder;
+import antessio.dynamoplus.service.bean.Document;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import org.junit.jupiter.api.Test;
 
@@ -18,15 +19,17 @@ class RecordToDynamoDbConverterTest {
     @Test
     void toDynamo() {
         //given
-        Map<String, Object> document = ofEntries(
-                entry("field1", "value1"),
-                entry("field2", "value2"),
-                entry("field3", ofEntries(
-                        entry("field31", "value31"),
-                        entry("field32", ofEntries(
-                                entry("field321", "value321")
+        Document document = new Document(
+                ofEntries(
+                        entry("field1", "value1"),
+                        entry("field2", "value2"),
+                        entry("field3", ofEntries(
+                                entry("field31", "value31"),
+                                entry("field32", ofEntries(
+                                        entry("field321", "value321")
+                                ))
                         ))
-                ))
+                )
         );
         Record record = RecordBuilder.aRecord()
                 .withPk("test#12314")
@@ -51,14 +54,17 @@ class RecordToDynamoDbConverterTest {
         String expectedPk = "test#1234";
         String expectedSk = "test";
         String expectedData = "1234";
-        Map<String, Object> expectedDocument = ofEntries(
-                entry("field1", "value1"),
-                entry("field3", ofEntries(
-                        entry("field31", "value31"),
-                        entry("field32", ofEntries(
-                                entry("field321", "value321")
-                        ))
-                ))
+        Document expectedDocument = new Document(
+                ofEntries(
+                        entry("field1", "value1"),
+                        entry("field3", ofEntries(
+                                entry("field31", "value31"),
+                                entry("field32", ofEntries(
+                                        entry("field321", "value321")
+                                ))
+                                )
+                        )
+                )
         );
         String document = "{\"field1\":\"value1\",\"field3\":{\"field31\":\"value31\",\"field32\":{\"field321\":\"value321\"}}}";
         Map<String, AttributeValue> item = new HashMap<>();

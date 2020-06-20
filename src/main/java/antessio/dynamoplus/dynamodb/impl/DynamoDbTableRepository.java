@@ -1,5 +1,9 @@
 package antessio.dynamoplus.dynamodb.impl;
 
+import antessio.dynamoplus.common.query.And;
+import antessio.dynamoplus.common.query.Eq;
+import antessio.dynamoplus.common.query.PredicateValue;
+import antessio.dynamoplus.common.query.Range;
 import antessio.dynamoplus.dynamodb.DynamoDb;
 import antessio.dynamoplus.dynamodb.DynamoDbRepository;
 import antessio.dynamoplus.dynamodb.RecordToDynamoDbConverter;

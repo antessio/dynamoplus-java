@@ -1,4 +1,4 @@
-package antessio.dynamoplus.dynamodb.bean.query;
+package antessio.dynamoplus.common.query;
 
 import java.util.List;
 import java.util.Map;

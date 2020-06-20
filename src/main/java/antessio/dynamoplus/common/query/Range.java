@@ -1,4 +1,4 @@
-package antessio.dynamoplus.dynamodb.bean.query;
+package antessio.dynamoplus.common.query;
 
 public class Range implements Predicate {
     private String fieldName;

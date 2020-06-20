@@ -1,5 +1,7 @@
 package antessio.dynamoplus.utils;
 
+import antessio.dynamoplus.service.bean.Document;
+
 import java.util.*;
 
 import static antessio.dynamoplus.utils.MapUtil.*;
@@ -23,7 +25,7 @@ public final class DynamoPlusUtils {
      * @param fields   the list of values to index
      * @return Map field - document value
      */
-    public static Map<String, String> getIndexingMap(Map<String, Object> document, List<String> fields) {
+    public static Map<String, String> getIndexingMap(Document document, List<String> fields) {
         return linkedHashMapOfEntries(
                 fields.stream()
                         .map(f -> entry(f, getValueRecursively(f, document)
@@ -35,14 +37,7 @@ public final class DynamoPlusUtils {
         );
     }
 
-    public static <T> T safeGet(Map<String, Object> document, Class<T> expectedClass, String key) {
-        return Optional.ofNullable(document.get(key))
-                .filter(v -> expectedClass.isAssignableFrom(v.getClass()))
-                .map(expectedClass::cast)
-                .orElse(null);
-    }
-
-    public static Optional<Object> getValueRecursively(String f, Map<String, Object> document) {
+    public static Optional<Object> getValueRecursively(String f, Document document) {
         String[] fieldsSplit = f.split("\\" + FIELD_SEPARATOR);
         if (fieldsSplit.length == 1) {
             return Optional.ofNullable(document.get(fieldsSplit[0]));
@@ -51,7 +46,7 @@ public final class DynamoPlusUtils {
             if (r1 instanceof Map) {
                 Map<String, Object> nestedMap = (Map<String, Object>) r1;
                 if (nestedMap.containsKey(fieldsSplit[1])) {
-                    return getValueRecursively(String.join(FIELD_SEPARATOR, Arrays.copyOfRange(fieldsSplit, 1, fieldsSplit.length)), nestedMap);
+                    return getValueRecursively(String.join(FIELD_SEPARATOR, Arrays.copyOfRange(fieldsSplit, 1, fieldsSplit.length)), new Document(nestedMap));
                 }
             }
         }

@@ -1,17 +1,19 @@
 package antessio.dynamoplus.dynamodb.bean;
 
+import antessio.dynamoplus.service.bean.Document;
+
 import java.util.Map;
 
 public class Record {
     private String pk;
     private String sk;
     private String data;
-    private Map<String, Object> document;
+    private Document document;
 
     public Record() {
     }
 
-    public Record(String pk, String sk, String data, Map<String, Object> document) {
+    public Record(String pk, String sk, String data, Document document) {
         this.pk = pk;
         this.sk = sk;
         this.data = data;
@@ -30,7 +32,7 @@ public class Record {
         return data;
     }
 
-    public Map<String, Object> getDocument() {
+    public Document getDocument() {
         return document;
     }
 

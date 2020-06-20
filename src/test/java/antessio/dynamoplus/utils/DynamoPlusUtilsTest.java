@@ -1,5 +1,6 @@
 package antessio.dynamoplus.utils;
 
+import antessio.dynamoplus.service.bean.Document;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -13,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class DynamoPlusUtilsTest {
 
-    public static final Map<String, Object> DOCUMENT_EXAMPLE = ofEntries(
+    public static final Document DOCUMENT_EXAMPLE = new Document(ofEntries(
             entry("field1", "value1"),
             entry("field2", "value2"),
             entry("field3", ofEntries(
@@ -22,6 +23,7 @@ public class DynamoPlusUtilsTest {
                             entry("field321", "value321")
                     ))
             ))
+    )
     );
 
     @Test

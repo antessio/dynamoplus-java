@@ -1,6 +1,8 @@
 package antessio.dynamoplus.dynamodb.bean;
 
-import antessio.dynamoplus.dynamodb.bean.query.Predicate;
+import antessio.dynamoplus.common.query.Predicate;
+
+import java.util.Objects;
 
 public class Query {
     private String partitionKey;
@@ -34,5 +36,31 @@ public class Query {
 
     public Record getStartFrom() {
         return startFrom;
+    }
+
+    @Override
+    public String toString() {
+        return "Query{" +
+                "partitionKey='" + partitionKey + '\'' +
+                ", predicate=" + predicate +
+                ", limit=" + limit +
+                ", startFrom=" + startFrom +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Query query = (Query) o;
+        return Objects.equals(partitionKey, query.partitionKey) &&
+                Objects.equals(predicate, query.predicate) &&
+                Objects.equals(limit, query.limit) &&
+                Objects.equals(startFrom, query.startFrom);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(partitionKey, predicate, limit, startFrom);
     }
 }

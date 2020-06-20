@@ -1,10 +1,12 @@
 package antessio.dynamoplus.service.system;
 
+import antessio.dynamoplus.BaseUnitTest;
 import antessio.dynamoplus.dynamodb.bean.Query;
 import antessio.dynamoplus.dynamodb.bean.Record;
 import antessio.dynamoplus.dynamodb.bean.RecordBuilder;
 import antessio.dynamoplus.dynamodb.bean.query.QueryResultsWithCursor;
 import antessio.dynamoplus.dynamodb.impl.DynamoDbTableRepository;
+import antessio.dynamoplus.service.bean.Document;
 import antessio.dynamoplus.service.system.IndexService;
 import antessio.dynamoplus.service.system.bean.collection.AttributeBuilder;
 import antessio.dynamoplus.service.system.bean.collection.CollectionBuilder;
@@ -29,15 +31,15 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 
-class IndexServiceTest {
+class IndexServiceTest extends BaseUnitTest {
     private DynamoDbTableRepository repoTable = mock(DynamoDbTableRepository.class);
     private IndexService indexService;
-    private EasyRandom generator;
 
     @BeforeEach
-    void setUp() {
+    protected void setUp() {
+        super.setUp();
         indexService = new IndexService(repoTable);
-        generator = new EasyRandom();
+
 
     }
 
@@ -50,7 +52,7 @@ class IndexServiceTest {
     void testCreateIndex() {
         //given
         Index index = randomIndex();
-        Map<String, Object> document = IndexService.fromIndexToMap(index);
+        Document document = IndexService.fromIndexToMap(index);
         Record expectedRecord = RecordBuilder.aRecord()
                 .withPk("index#" + index.getUid())
                 .withSk("index")
@@ -73,7 +75,7 @@ class IndexServiceTest {
     void testCreateGsiRows() {
         //given
         Index index = randomIndex();
-        Map<String, Object> document = IndexService.fromIndexToMap(index);
+        Document document = IndexService.fromIndexToMap(index);
         Record expectedRecord = RecordBuilder.aRecord()
                 .withPk("index#" + index.getUid())
                 .withSk("index#collection.name#name")
@@ -94,7 +96,7 @@ class IndexServiceTest {
         //given
         UUID id = UUID.randomUUID();
         Index index = randomIndex();
-        Map<String, Object> document = IndexService.fromIndexToMap(index);
+        Document document = IndexService.fromIndexToMap(index);
         when(repoTable.get(any(), any())).thenReturn(Optional.of(generator.nextObject(RecordBuilder.class)
                 .withDocument(document)
                 .build()));
@@ -112,7 +114,7 @@ class IndexServiceTest {
     void testGetByCollectionName() {
         //given
         Index index = randomIndex();
-        Map<String, Object> document = IndexService.fromIndexToMap(index);
+        Document document = IndexService.fromIndexToMap(index);
         when(repoTable.query(any())).thenReturn(
                 new QueryResultsWithCursor(generator.objects(RecordBuilder.class, 2)
                         .map(b -> b.withDocument(document)
@@ -141,7 +143,7 @@ class IndexServiceTest {
     void testGetByCollectionNameAndName() {
         //given
         Index index = randomIndex();
-        Map<String, Object> document = IndexService.fromIndexToMap(index);
+        Document document = IndexService.fromIndexToMap(index);
         when(repoTable.query(any())).thenReturn(
                 new QueryResultsWithCursor(generator.objects(RecordBuilder.class, 2)
                         .map(b -> b.withDocument(document)
@@ -171,7 +173,7 @@ class IndexServiceTest {
         //given
         UUID id = UUID.randomUUID();
         Index index = randomIndex();
-        Map<String, Object> document = IndexService.fromIndexToMap(index);
+        Document document = IndexService.fromIndexToMap(index);
         doNothing().when(repoTable).delete(any(), any());
         //when
         indexService.deleteIndexById(id);
@@ -179,14 +181,5 @@ class IndexServiceTest {
         verify(repoTable).delete(eq("index#" + id), eq("index"));
     }
 
-    private Index randomIndex() {
-        return generator.nextObject(IndexBuilder.class)
-                .collection(generator.nextObject(CollectionBuilder.class)
-                        .attributes(generator.objects(AttributeBuilder.class, 3)
-                                .map(b -> b.attributes(null).build())
-                                .collect(toList()))
-                        .createCollection())
-                .conditions(generator.objects(String.class, 3).collect(toList()))
-                .createIndex();
-    }
+
 }

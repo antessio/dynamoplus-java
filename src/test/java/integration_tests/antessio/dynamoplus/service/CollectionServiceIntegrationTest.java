@@ -36,10 +36,10 @@ public class CollectionServiceIntegrationTest extends IntegrationTest {
     @Order(0)
     void testInsertAndLoadIndex() {
         //given
-        Collection toInsert = new CollectionBuilder()
-                .idKey("id")
-                .name(COLLECTION_NAME)
-                .attributes(Arrays.asList(
+        Collection toInsert = CollectionBuilder.aCollection()
+                .withIdKey("id")
+                .withName(COLLECTION_NAME)
+                .withAttributes(Arrays.asList(
                         new AttributeBuilder()
                                 .attributeName("field1")
                                 .attributeType(CollectionAttributeType.STRING)
@@ -49,7 +49,7 @@ public class CollectionServiceIntegrationTest extends IntegrationTest {
                                 .attributeType(CollectionAttributeType.NUMBER)
                                 .build()
                 ))
-                .createCollection();
+                .build();
         //when
         Collection created = collectionService.createCollection(toInsert);
         //then
@@ -70,10 +70,10 @@ public class CollectionServiceIntegrationTest extends IntegrationTest {
     @Order(1)
     @Test
     public void testUpdate() {
-        Collection toUpdate = new CollectionBuilder()
-                .idKey("id")
-                .name(COLLECTION_NAME)
-                .attributes(Arrays.asList(
+        Collection toUpdate = CollectionBuilder.aCollection()
+                .withIdKey("id")
+                .withName(COLLECTION_NAME)
+                .withAttributes(Arrays.asList(
                         new AttributeBuilder()
                                 .attributeName("field1")
                                 .attributeType(CollectionAttributeType.NUMBER)
@@ -83,7 +83,7 @@ public class CollectionServiceIntegrationTest extends IntegrationTest {
                                 .attributeType(CollectionAttributeType.NUMBER)
                                 .build()
                 ))
-                .createCollection();
+                .build();
 
         Collection updated = collectionService.updateCollection(toUpdate);
         //then
