@@ -143,6 +143,7 @@ public class DynamoPlusService {
     }
 
     private Document updateExistingClientAuthorization(String id, Document document) {
+        //TODO: missing implementation
         return null;
     }
 
@@ -179,6 +180,7 @@ public class DynamoPlusService {
         //if not system
         //from collection execute validation on json schema
         //=> get document
+        //TODO: missing implementation
         return null;
     }
 
@@ -188,10 +190,12 @@ public class DynamoPlusService {
         //if not system
         //from collection execute validation on json schema
         //=> delete document
+        //TODO missing implementation
     }
 
     public PaginatedResult<Document> query(String collectionName,
                                            Predicate predicate) {
+        //TODO missing implementation
         return null;
     }
 
