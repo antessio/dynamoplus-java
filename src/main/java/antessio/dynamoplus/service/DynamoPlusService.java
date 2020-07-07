@@ -12,6 +12,8 @@ import antessio.dynamoplus.service.exception.DocumentNotFoundException;
 import antessio.dynamoplus.service.system.ClientAuthorizationService;
 import antessio.dynamoplus.service.system.CollectionService;
 import antessio.dynamoplus.service.system.IndexService;
+import antessio.dynamoplus.service.system.bean.client_authorization.ClientAuthorization;
+import antessio.dynamoplus.service.system.bean.client_authorization.ClientAuthorizationBuilder;
 import antessio.dynamoplus.service.system.bean.client_authorization.ClientAuthorizationInterface;
 import antessio.dynamoplus.service.system.bean.collection.Collection;
 import antessio.dynamoplus.service.system.bean.collection.CollectionBuilder;
@@ -144,6 +146,10 @@ public class DynamoPlusService {
 
     private Document updateExistingClientAuthorization(String id, Document document) {
         //TODO: missing implementation
+        validationService.validate(document, ClientAuthorizationService.CLIENT_AUTHORIZATION_METADATA);
+        ClientAuthorization clientAuthorization = ConversionUtils.getInstance().convertDocument(document, ClientAuthorization.class);
+
+        clientAuthorizationService.update(ClientAuthorizationBuilder.aClientAuthorization().withClientId(id).build());
         return null;
     }
 

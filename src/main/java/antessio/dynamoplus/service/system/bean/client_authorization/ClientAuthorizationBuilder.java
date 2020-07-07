@@ -14,6 +14,14 @@ public final class ClientAuthorizationBuilder {
         return new ClientAuthorizationBuilder();
     }
 
+    public static ClientAuthorizationBuilder authorizationBuilder(ClientAuthorization clientAuthorization) {
+        return new ClientAuthorizationBuilder()
+                .withClientId(clientAuthorization.getClientId())
+                .withClientScopes(clientAuthorization.getClientScopes())
+                .withType(clientAuthorization.getType());
+
+    }
+
     public ClientAuthorizationBuilder withClientId(String clientId) {
         this.clientId = clientId;
         return this;
