@@ -10,7 +10,7 @@
     <properties>
         <junit-jupiter.version>5.5.2</junit-jupiter.version>
         <aws-dynamodb.version>1.11.762</aws-dynamodb.version>
-        <jackson-databind.version>2.10.0.pr1</jackson-databind.version>
+        <jackson-databind.version>2.12.6.1</jackson-databind.version>
     </properties>
     <dependencies>
         <dependency>
