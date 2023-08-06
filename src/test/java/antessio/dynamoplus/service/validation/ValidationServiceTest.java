@@ -230,8 +230,8 @@ public class ValidationServiceTest {
                                         MapUtil.entry("test4", "test")
                                 ))
                         ))
-                )
-        );
+                ),
+                id);
         //when
         //then
         assertThatExceptionOfType(DocumentValidationException.class)

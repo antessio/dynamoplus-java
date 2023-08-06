@@ -23,8 +23,8 @@ public class DynamoPlusUtilsTest {
                             entry("field321", "value321")
                     ))
             ))
-    )
-    );
+    ),
+                                                                 id);
 
     @Test
     void shouldGetValueFromDocument() {

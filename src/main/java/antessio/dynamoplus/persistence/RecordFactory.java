@@ -1,8 +1,9 @@
-package antessio.dynamoplus.dynamodb;
+package antessio.dynamoplus.persistence;
 
-import antessio.dynamoplus.dynamodb.bean.Record;
-import antessio.dynamoplus.dynamodb.bean.RecordBuilder;
+import antessio.dynamoplus.persistence.bean.Record;
+import antessio.dynamoplus.persistence.bean.RecordBuilder;
 
+import antessio.dynamoplus.persistence.bean.RecordKey;
 import antessio.dynamoplus.service.bean.Document;
 import antessio.dynamoplus.utils.DynamoPlusUtils;
 import antessio.dynamoplus.service.system.bean.collection.Collection;
@@ -34,17 +35,16 @@ public final class RecordFactory {
         String data = getOrdering_key(document, "order_unique")
                 .orElse(idKey);
         return RecordBuilder.aRecord()
-                .withPk(String.format("%s#%s", sk, idKey))
-                .withSk(sk)
-                .withData(data)
-                .withDocument(document)
-                .build();
+                            .withRecordKey(new RecordKey(String.format("%s#%s", sk, idKey), sk))
+                            .withData(data)
+                            .withDocument(document)
+                            .build();
     }
 
     private Optional<String> getIdKeyFromCollection(Document document, Collection collection) {
         return DynamoPlusUtils.getValueRecursively(collection.getIdKey(), document)
-                .filter(o -> o instanceof String)
-                .map(String.class::cast);
+                              .filter(o -> o instanceof String)
+                              .map(String.class::cast);
     }
 
 
@@ -60,19 +60,21 @@ public final class RecordFactory {
                 .orElse(valuesString);
 
         return RecordBuilder.aRecord()
-                .withPk(maybeIdKey.map(idKey -> String.format("%s#%s", collection.getName(), idKey)).orElse(null))
-                .withSk(String.format("%s#%s", collection.getName(), keysString))
-                .withData(data)
-                .withDocument(document)
-                .build();
+                            .withRecordKey(new RecordKey(
+                                    maybeIdKey.map(idKey -> String.format("%s#%s", collection.getName(), idKey)).orElse(null),
+                                    String.format("%s#%s", collection.getName(), keysString)))
+                            .withData(data)
+                            .withDocument(document)
+                            .build();
     }
 
     private Optional<String> getOrdering_key(Document document, String orderingKey) {
         return Optional.ofNullable(orderingKey)
-                .flatMap(k -> DynamoPlusUtils.getValueRecursively(k, document)
-                        .filter(o -> o instanceof Long)
-                        .map(Long.class::cast)
-                        .map(Object::toString)
-                );
+                       .flatMap(k -> DynamoPlusUtils.getValueRecursively(k, document)
+                                                    .filter(o -> o instanceof Long)
+                                                    .map(Long.class::cast)
+                                                    .map(Object::toString)
+                       );
     }
+
 }

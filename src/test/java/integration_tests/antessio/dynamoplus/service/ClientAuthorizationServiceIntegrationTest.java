@@ -1,13 +1,14 @@
 package integration_tests.antessio.dynamoplus.service;
 
-import antessio.dynamoplus.dynamodb.DynamoDb;
-import antessio.dynamoplus.dynamodb.impl.DynamoDbTableRepository;
+import antessio.dynamoplus.persistence.DynamoDb;
+import antessio.dynamoplus.persistence.impl.DynamoDbTableRepository;
 import antessio.dynamoplus.service.system.ClientAuthorizationService;
 import antessio.dynamoplus.service.system.bean.client_authorization.*;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import org.assertj.core.internal.FieldByFieldComparator;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -21,7 +22,7 @@ public class ClientAuthorizationServiceIntegrationTest extends IntegrationTest {
 
 
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         AmazonDynamoDB client = dynamoLocal();
         DynamoDb dynamoDb = new DynamoDb(client);
         DynamoDbTableRepository tableRepository = new DynamoDbTableRepository(dynamoDb, "system");

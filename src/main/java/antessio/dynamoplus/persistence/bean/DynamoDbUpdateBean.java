@@ -1,4 +1,4 @@
-package antessio.dynamoplus.dynamodb.bean;
+package antessio.dynamoplus.persistence.bean;
 
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.AttributeValueUpdate;

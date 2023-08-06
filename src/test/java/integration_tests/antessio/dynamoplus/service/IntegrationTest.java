@@ -1,29 +1,76 @@
 package integration_tests.antessio.dynamoplus.service;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
-import com.amazonaws.services.dynamodbv2.model.*;
-import org.junit.jupiter.api.BeforeAll;
 
-public class IntegrationTest {
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testcontainers.dynamodb.DynaliteContainer;
+
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
+import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
+import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndex;
+import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
+import com.amazonaws.services.dynamodbv2.model.KeyType;
+import com.amazonaws.services.dynamodbv2.model.Projection;
+import com.amazonaws.services.dynamodbv2.model.ProjectionType;
+import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
+import com.amazonaws.services.dynamodbv2.model.ResourceNotFoundException;
+import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
+import com.amazonaws.services.dynamodbv2.model.TableDescription;
+
+import antessio.dynamoplus.BaseUnitTest;
+
+public class IntegrationTest extends BaseUnitTest {
+    final static Logger logger = LoggerFactory.getLogger(IntegrationTest.class);
+    protected static DynaliteContainer dynamoDBTestContainer = new DynaliteContainer();
     protected static AmazonDynamoDB dynamoLocal() {
-        String endpoint = "http://localhost:9898";
-        BasicAWSCredentials credentials = new BasicAWSCredentials("foo", "bar");
-        AmazonDynamoDBClientBuilder clientBuilder = AmazonDynamoDBClientBuilder.standard()
-                .withCredentials(new AWSStaticCredentialsProvider(credentials))
-                .withEndpointConfiguration(
-                        new AwsClientBuilder.EndpointConfiguration(endpoint, null)
-                );
-        return clientBuilder.build();
+
+        return dynamoDBTestContainer.getClient();
     }
 
     @BeforeAll
     static void beforeAll() {
+        dynamoDBTestContainer.start();
         deleteTable("system");
+        deleteTable("domain");
         createTable("system");
+        createTable("domain");
+        checkStarted();
+
+
+    }
+
+    private static void checkStarted() {
+        int retries = 0;
+        while (!checkTableExists() || retries >= 3){
+            logger.info("waiting for container to start");
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            retries++;
+        }
+        if (!checkTableExists()){
+            throw new IllegalStateException("container not started");
+        }
+    }
+
+    private static boolean checkTableExists() {
+        try {
+            TableDescription systemTable = dynamoLocal().describeTable("system").getTable();
+            TableDescription domainTable = dynamoLocal().describeTable("domain").getTable();
+            return systemTable != null && domainTable != null;
+        }catch (Exception e){
+            return false;
+        }
+    }
+
+    @AfterAll
+    static void afterAll() {
+        dynamoDBTestContainer.stop();
     }
 
     private static void createTable(String tableName) {

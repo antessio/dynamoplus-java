@@ -1,6 +1,6 @@
-package antessio.dynamoplus.dynamodb;
+package antessio.dynamoplus.persistence;
 
-import antessio.dynamoplus.dynamodb.bean.Record;
+import antessio.dynamoplus.persistence.bean.Record;
 import antessio.dynamoplus.service.bean.Document;
 import antessio.dynamoplus.service.system.bean.collection.Collection;
 import antessio.dynamoplus.service.system.bean.collection.CollectionBuilder;
@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.AbstractMap;
 import java.util.Arrays;
-import java.util.Map;
 
 import static antessio.dynamoplus.utils.MapUtil.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,8 +47,8 @@ public class RecordFactoryTest {
         Record record = recordFactory.masterRecordFromDocument(document, collection);
         //then
         assertThat(record)
-                .matches(r -> r.getPk().equals(expectedCollectionName + "#value2"))
-                .matches(r -> r.getSk().equals(expectedCollectionName))
+                .matches(r -> r.getRecordKey().getPk().equals(expectedCollectionName + "#value2"))
+                .matches(r -> r.getRecordKey().getSk().equals(expectedCollectionName))
                 .matches(r -> r.getData().equals("value2"))
                 .matches(r -> r.getDocument().equals(document));
     }
@@ -79,8 +78,8 @@ public class RecordFactoryTest {
         Record record = recordFactory.masterRecordFromDocument(document, collection);
         //then
         assertThat(record)
-                .matches(r -> r.getPk().equals(expectedCollectionName + "#value2"))
-                .matches(r -> r.getSk().equals(expectedCollectionName))
+                .matches(r -> r.getRecordKey().getPk().equals(expectedCollectionName + "#value2"))
+                .matches(r -> r.getRecordKey().getSk().equals(expectedCollectionName))
                 .hasFieldOrPropertyWithValue("data", expectedOrderUnique + "")
                 .matches(r -> r.getDocument().equals(document));
     }
@@ -115,8 +114,8 @@ public class RecordFactoryTest {
         Record record = recordFactory.indexingRecordFromDocument(document, index);
         //then
         assertThat(record)
-                .matches(r -> r.getPk().equals(expectedCollectionName + "#value2"))
-                .matches(r -> r.getSk().equals(String.format("%s#%s", expectedCollectionName, String.join("#", expectedFields))))
+                .matches(r -> r.getRecordKey().getPk().equals(expectedCollectionName + "#value2"))
+                .matches(r -> r.getRecordKey().getSk().equals(String.format("%s#%s", expectedCollectionName, String.join("#", expectedFields))))
                 .hasFieldOrPropertyWithValue("data", "value1#value31#value321")
                 .matches(r -> r.getDocument().equals(document));
     }
@@ -152,13 +151,13 @@ public class RecordFactoryTest {
         Record record = recordFactory.indexingRecordFromDocument(document, index);
         //then
         assertThat(record)
-                .matches(r -> r.getPk().equals(expectedCollectionName + "#value2"))
-                .matches(r -> r.getSk().equals(String.format("%s#%s", expectedCollectionName, String.join("#", expectedFields))))
+                .matches(r -> r.getRecordKey().getPk().equals(expectedCollectionName + "#value2"))
+                .matches(r -> r.getRecordKey().getSk().equals(String.format("%s#%s", expectedCollectionName, String.join("#", expectedFields))))
                 .hasFieldOrPropertyWithValue("data", "value1#value31#value321#" + expectedOrderUnique)
                 .matches(r -> r.getDocument().equals(document));
     }
 
     private Document ofDocument(AbstractMap.SimpleEntry<String, Object>... values) {
-        return new Document(ofEntries(values));
+        return new Document(ofEntries(values), id);
     }
 }

@@ -1,4 +1,4 @@
-package antessio.dynamoplus.dynamodb;
+package antessio.dynamoplus.persistence;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.model.*;

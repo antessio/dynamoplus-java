@@ -1,12 +1,11 @@
 package antessio.dynamoplus.utils;
 
 import antessio.dynamoplus.service.bean.Document;
-import antessio.dynamoplus.service.system.bean.client_authorization.ClientAuthorization;
 import antessio.dynamoplus.service.system.bean.client_authorization.ClientAuthorizationApiKey;
 import antessio.dynamoplus.service.system.bean.client_authorization.ClientAuthorizationHttpSignature;
 import antessio.dynamoplus.service.system.bean.client_authorization.ClientAuthorizationInterface;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -14,7 +13,6 @@ import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
 import java.io.IOException;
 import java.util.Map;
@@ -22,6 +20,7 @@ import java.util.Map;
 import static antessio.dynamoplus.service.system.bean.client_authorization.ClientAuthorizationInterface.*;
 
 public final class ConversionUtils {
+
     private ObjectMapper objectMapper;
     private static ConversionUtils instance;
 
@@ -43,9 +42,18 @@ public final class ConversionUtils {
     }
 
     public <T> Document convertObject(T obj) {
-        return new Document(objectMapper.convertValue(obj, new TypeReference<Map<String, Object>>() {
-        })
-        );
+        return new Document(
+                objectMapper.convertValue(obj, new TypeReference<Map<String, Object>>() {
+                }),
+                null);
+    }
+
+    public <T> Document convertObject(T obj, String keyField) {
+        Map<String, Object> dict = objectMapper.convertValue(obj, new TypeReference<Map<String, Object>>() {
+        });
+        return new Document(
+                dict,
+                (String) dict.get(keyField));
     }
 
     public <T> T convertDocument(Document document, Class<T> cls) {
@@ -84,8 +92,9 @@ public final class ConversionUtils {
         }
 
         @Override
-        public ClientAuthorizationInterface deserialize(JsonParser jsonParser,
-                                                        DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+        public ClientAuthorizationInterface deserialize(
+                JsonParser jsonParser,
+                DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
             ObjectMapper mapper = (ObjectMapper) jsonParser.getCodec();
             ObjectNode root = mapper.readTree(jsonParser);
 
@@ -98,5 +107,7 @@ public final class ConversionUtils {
             }
             return null;
         }
+
     }
+
 }

@@ -7,11 +7,14 @@ import java.util.*;
 public class Document {
     private final Map<String, Object> dict;
 
-    public Document(Map<String, Object> dict) {
+    private final String id;
+    public Document(Map<String, Object> dict, String id) {
         this.dict = Collections.unmodifiableMap(new HashMap<>(dict));
+        this.id = id;
     }
 
     public Document(String idKey, String idValue) {
+        this.id = idValue;
         this.dict = Collections.unmodifiableMap(
                 new HashMap<>(
                         MapUtil.ofEntries(
@@ -21,6 +24,7 @@ public class Document {
 
     public Document() {
         this.dict = Collections.emptyMap();
+        this.id = null;
     }
 
     public boolean equals(Object o) {
@@ -49,4 +53,9 @@ public class Document {
     public Map<String, Object> getDict() {
         return dict;
     }
+
+    public String getId() {
+        return id;
+    }
+
 }

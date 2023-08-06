@@ -1,11 +1,10 @@
-package antessio.dynamoplus.dynamodb.bean;
+package antessio.dynamoplus.persistence.bean;
 
 import antessio.dynamoplus.service.bean.Document;
 
-
 public final class RecordBuilder {
-    private String pk;
-    private String sk;
+
+    private RecordKey recordKey;
     private String data;
     private Document document;
 
@@ -16,13 +15,8 @@ public final class RecordBuilder {
         return new RecordBuilder();
     }
 
-    public RecordBuilder withPk(String pk) {
-        this.pk = pk;
-        return this;
-    }
-
-    public RecordBuilder withSk(String sk) {
-        this.sk = sk;
+    public RecordBuilder withRecordKey(RecordKey recordKey) {
+        this.recordKey = recordKey;
         return this;
     }
 
@@ -37,6 +31,7 @@ public final class RecordBuilder {
     }
 
     public Record build() {
-        return new Record(pk, sk, data, document);
+        return new Record(recordKey, data, document);
     }
+
 }

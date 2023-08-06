@@ -1,8 +1,8 @@
 package antessio.dynamoplus.service.system;
 
-import antessio.dynamoplus.dynamodb.RecordFactory;
-import antessio.dynamoplus.dynamodb.bean.Record;
-import antessio.dynamoplus.dynamodb.impl.DynamoDbTableRepository;
+import antessio.dynamoplus.persistence.RecordFactory;
+import antessio.dynamoplus.persistence.bean.Record;
+import antessio.dynamoplus.persistence.impl.DynamoDbTableRepository;
 import antessio.dynamoplus.service.bean.Document;
 import antessio.dynamoplus.service.system.bean.client_authorization.ClientAuthorizationBuilder;
 import antessio.dynamoplus.service.system.bean.client_authorization.ClientAuthorizationInterface;
@@ -15,9 +15,10 @@ import java.util.stream.Stream;
 
 public class ClientAuthorizationService {
 
+    private static final String CLIENT_AUTHORIZATION_KEY = "client_id";
     private static final List<Attribute> CLIENT_AUTHORIZATION_MANDATORY_ATTRIBUTES = Arrays.asList(
             new AttributeBuilder()
-                    .attributeName("client_id")
+                    .attributeName(CLIENT_AUTHORIZATION_KEY)
                     .attributeType(CollectionAttributeType.STRING)
                     .constraints(Collections.singletonList(CollectionAttributeConstraint.NOT_NULL))
                     .build(),
@@ -86,7 +87,7 @@ public class ClientAuthorizationService {
     private static Collection createClientAuthorizationCollection(
             List<Attribute> clientAuthorizationMandatoryAttributes) {
         return CollectionBuilder.aCollection()
-                .withIdKey("client_id")
+                .withIdKey(CLIENT_AUTHORIZATION_KEY)
                 .withName("client_authorization")
                 .withAutoGenerateId(false)
                 .withAttributes(clientAuthorizationMandatoryAttributes)
@@ -123,7 +124,7 @@ public class ClientAuthorizationService {
                 .withClientId(clientId)
                 .build();
         Record record = RecordFactory.getInstance().masterRecordFromDocument(fromClientAuthorizationToMap(clientAuthorization), CLIENT_AUTHORIZATION_METADATA);
-        return tableRepository.get(record.getPk(), record.getSk())
+        return tableRepository.get(record.getRecordKey().getPk(), record.getRecordKey().getSk())
                 .map(Record::getDocument)
                 .map(ClientAuthorizationService::fromMapToClientAuthorization);
     }
@@ -148,7 +149,7 @@ public class ClientAuthorizationService {
                 .withClientId(clientId)
                 .build();
         Record record = RecordFactory.getInstance().masterRecordFromDocument(fromClientAuthorizationToMap(clientAuthorizationInterface), CLIENT_AUTHORIZATION_METADATA);
-        tableRepository.delete(record.getPk(), record.getSk());
+        tableRepository.delete(record.getRecordKey().getPk(), record.getRecordKey().getSk());
     }
 
 

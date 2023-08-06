@@ -19,6 +19,14 @@ public class MapUtil {
         return Stream.of(values).collect(toMap(Entry::getKey, Entry::getValue));
     }
 
+    public static Map<String, Object> merge(Map<String, Object> source, Map<String, Object> toMergeInto) {
+
+
+        Map<String, Object> result = new java.util.HashMap<>(source);
+        result.putAll(toMergeInto);
+        return result;
+    }
+
     public static LinkedHashMap<String, Object> linkedHashMapOfEntries(SimpleEntry<String, Object>... values) {
         return Stream.of(values).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (x, y) -> y, LinkedHashMap::new));
     }
@@ -30,4 +38,5 @@ public class MapUtil {
     public static <T> SimpleEntry<String, T> entry(String key, T value, Class<T> cls) {
         return new SimpleEntry<String, T>(key, value);
     }
+
 }

@@ -1,4 +1,4 @@
-package antessio.dynamoplus.dynamodb.bean;
+package antessio.dynamoplus.persistence.bean;
 
 import antessio.dynamoplus.common.query.Predicate;
 

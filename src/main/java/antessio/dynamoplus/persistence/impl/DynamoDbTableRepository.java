@@ -1,16 +1,18 @@
-package antessio.dynamoplus.dynamodb.impl;
+package antessio.dynamoplus.persistence.impl;
 
 import antessio.dynamoplus.common.query.And;
 import antessio.dynamoplus.common.query.Eq;
 import antessio.dynamoplus.common.query.PredicateValue;
 import antessio.dynamoplus.common.query.Range;
-import antessio.dynamoplus.dynamodb.DynamoDb;
-import antessio.dynamoplus.dynamodb.DynamoDbRepository;
-import antessio.dynamoplus.dynamodb.RecordToDynamoDbConverter;
-import antessio.dynamoplus.dynamodb.bean.Query;
-import antessio.dynamoplus.dynamodb.bean.Record;
-import antessio.dynamoplus.dynamodb.bean.RecordBuilder;
-import antessio.dynamoplus.dynamodb.bean.query.*;
+import antessio.dynamoplus.persistence.DynamoDb;
+import antessio.dynamoplus.persistence.DynamoDbRepository;
+import antessio.dynamoplus.persistence.RecordToDynamoDbConverter;
+import antessio.dynamoplus.persistence.bean.Query;
+import antessio.dynamoplus.persistence.bean.Record;
+import antessio.dynamoplus.persistence.bean.RecordBuilder;
+import antessio.dynamoplus.persistence.bean.RecordKey;
+import antessio.dynamoplus.persistence.bean.query.*;
+
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
@@ -22,6 +24,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class DynamoDbTableRepository implements DynamoDbRepository {
+
     public static final String SK_DATA_INDEX = "sk-data-index";
     private final DynamoDb dynamoDb;
     private final String tableName;
@@ -34,41 +37,49 @@ public class DynamoDbTableRepository implements DynamoDbRepository {
     @Override
     public Record create(Record r) {
         return Optional.of(r)
-                .map(RecordToDynamoDbConverter::toDynamo)
-                .map(item -> dynamoDb.insert(item, tableName))
-                .map(RecordToDynamoDbConverter::fromDynamo)
-                .orElseThrow(() -> new RuntimeException("invalid record"));
+                       .map(RecordToDynamoDbConverter::toDynamo)
+                       .map(item -> dynamoDb.insert(item, tableName))
+                       .map(RecordToDynamoDbConverter::fromDynamo)
+                       .orElseThrow(() -> new RuntimeException("invalid record"));
 
     }
 
     @Override
     public Record update(Record r) {
         return Optional.of(r)
-                .map(RecordToDynamoDbConverter::toDynamoUpdate)
-                .map(item -> dynamoDb.update(item.getKey(), item.getValue(), tableName))
-                .map(RecordToDynamoDbConverter::fromDynamo)
-                .orElseThrow(() -> new RuntimeException("invalid record"));
+                       .map(RecordToDynamoDbConverter::toDynamoUpdate)
+                       .map(item -> dynamoDb.update(item.getKey(), item.getValue(), tableName))
+                       .map(RecordToDynamoDbConverter::fromDynamo)
+                       .orElseThrow(() -> new RuntimeException("invalid record"));
+    }
+
+    @Override
+    public void delete(RecordKey recordKey) {
+        Optional.of(RecordBuilder.aRecord()
+                                 .withRecordKey(recordKey)
+                                 .build())
+                .map(RecordToDynamoDbConverter::toDynamo)
+                .ifPresent(key -> dynamoDb.delete(key, tableName));
     }
 
     @Override
     public Optional<Record> get(String pk, String sk) {
-        return Optional.of(RecordBuilder.aRecord()
-                .withPk(pk)
-                .withSk(sk)
-                .build())
-                .map(RecordToDynamoDbConverter::toDynamo)
-                .map(key -> dynamoDb.getItem(key, tableName))
-                .map(RecordToDynamoDbConverter::fromDynamo);
+        return get(new RecordKey(pk, sk));
     }
 
     @Override
+    public Optional<Record> get(RecordKey recordKey) {
+        return Optional.of(RecordBuilder.aRecord()
+                                        .withRecordKey(recordKey)
+                                        .build())
+                       .map(RecordToDynamoDbConverter::toDynamo)
+                       .map(key -> dynamoDb.getItem(key, tableName))
+                       .map(RecordToDynamoDbConverter::fromDynamo);
+    }
+
+
     public void delete(String pk, String sk) {
-        Optional.of(RecordBuilder.aRecord()
-                .withPk(pk)
-                .withSk(sk)
-                .build())
-                .map(RecordToDynamoDbConverter::toDynamo)
-                .ifPresent(key -> dynamoDb.delete(key, tableName));
+        delete(new RecordKey(pk, sk));
     }
 
     @Override
@@ -103,7 +114,7 @@ public class DynamoDbTableRepository implements DynamoDbRepository {
             condition.put("data", new Condition()
                     .withComparisonOperator(ComparisonOperator.BEGINS_WITH)
                     .withAttributeValueList(new AttributeValue()
-                            .withS(eq.getFieldValue())));
+                                                    .withS(eq.getFieldValue())));
 
         } else if (query.getPredicate() instanceof Range) {
             Range range = (Range) query.getPredicate();
@@ -118,18 +129,24 @@ public class DynamoDbTableRepository implements DynamoDbRepository {
         }
 
         Map<String, AttributeValue> exclusiveStartKey = Optional.ofNullable(query.getStartFrom())
-                .map(RecordToDynamoDbConverter::toDynamo)
-                .orElse(null);
+                                                                .map(RecordToDynamoDbConverter::toDynamo)
+                                                                .orElse(null);
         QueryResult queryResult = dynamoDb.query(condition, exclusiveStartKey, query.getLimit(), SK_DATA_INDEX, tableName);
         return new QueryResultsWithCursor(
                 queryResult.getItems()
-                        .stream()
-                        .map(RecordToDynamoDbConverter::fromDynamo)
-                        .collect(Collectors.toList()),
+                           .stream()
+                           .map(RecordToDynamoDbConverter::fromDynamo)
+                           .collect(Collectors.toList()),
                 Optional.ofNullable(queryResult.getLastEvaluatedKey())
                         .map(RecordToDynamoDbConverter::fromDynamo)
                         .orElse(null)
         );
 
     }
+
+    @Override
+    public QueryResultsWithCursor query(antessio.dynamoplus.persistence.bean.query.Query query) {
+        return null;
+    }
+
 }

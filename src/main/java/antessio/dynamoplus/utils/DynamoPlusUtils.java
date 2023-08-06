@@ -46,7 +46,8 @@ public final class DynamoPlusUtils {
             if (r1 instanceof Map) {
                 Map<String, Object> nestedMap = (Map<String, Object>) r1;
                 if (nestedMap.containsKey(fieldsSplit[1])) {
-                    return getValueRecursively(String.join(FIELD_SEPARATOR, Arrays.copyOfRange(fieldsSplit, 1, fieldsSplit.length)), new Document(nestedMap));
+                    return getValueRecursively(String.join(FIELD_SEPARATOR, Arrays.copyOfRange(fieldsSplit, 1, fieldsSplit.length)),
+                                               new Document(nestedMap,null));
                 }
             }
         }

@@ -1,8 +1,9 @@
-package antessio.dynamoplus.dynamodb;
+package antessio.dynamoplus.persistence;
 
-import antessio.dynamoplus.dynamodb.bean.DynamoDbUpdateBean;
-import antessio.dynamoplus.dynamodb.bean.Record;
-import antessio.dynamoplus.dynamodb.bean.RecordBuilder;
+import antessio.dynamoplus.persistence.bean.DynamoDbUpdateBean;
+import antessio.dynamoplus.persistence.bean.Record;
+import antessio.dynamoplus.persistence.bean.RecordBuilder;
+import antessio.dynamoplus.persistence.bean.RecordKey;
 import antessio.dynamoplus.service.bean.Document;
 import antessio.dynamoplus.utils.ConversionUtils;
 import com.amazonaws.services.dynamodbv2.document.ItemUtils;
@@ -26,9 +27,9 @@ public final class RecordToDynamoDbConverter {
 
     public static Map<String, AttributeValue> toDynamo(Record record) {
         Map<String, AttributeValue> attributeValueMap = new HashMap<>();
-        Optional.ofNullable(record.getPk())
+        Optional.ofNullable(record.getRecordKey().getPk())
                 .ifPresent(pk -> attributeValueMap.put("pk", new AttributeValue().withS(pk)));
-        Optional.ofNullable(record.getSk())
+        Optional.ofNullable(record.getRecordKey().getSk())
                 .ifPresent(sk -> attributeValueMap.put("sk", new AttributeValue().withS(sk)));
         Optional.ofNullable(record.getData())
                 .ifPresent(data -> attributeValueMap.put("data", new AttributeValue().withS(data)));
@@ -47,13 +48,12 @@ public final class RecordToDynamoDbConverter {
         Document document = Optional.ofNullable(item.get("document"))
                 .map(AttributeValue::getS)
                 .map(ConversionUtils.getInstance()::fromJson)
-                .map(Document::new)
+                .map(dict -> new Document(dict, pk.split("#")[1]))
                 .orElseThrow(() -> new RuntimeException("document value not found from dynamo"));
         return RecordBuilder.aRecord()
                 .withDocument(document)
                 .withData(data)
-                .withSk(sk)
-                .withPk(pk)
+                .withRecordKey(new RecordKey(pk,sk))
                 .build();
     }
 

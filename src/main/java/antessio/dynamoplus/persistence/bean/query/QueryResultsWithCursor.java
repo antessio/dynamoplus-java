@@ -1,6 +1,6 @@
-package antessio.dynamoplus.dynamodb.bean.query;
+package antessio.dynamoplus.persistence.bean.query;
 
-import antessio.dynamoplus.dynamodb.bean.Record;
+import antessio.dynamoplus.persistence.bean.Record;
 
 import java.util.List;
 

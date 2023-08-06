@@ -1,15 +1,15 @@
 package antessio.dynamoplus.service.system;
 
-import antessio.dynamoplus.dynamodb.RecordFactory;
-import antessio.dynamoplus.dynamodb.bean.Record;
-import antessio.dynamoplus.dynamodb.impl.DynamoDbTableRepository;
+import antessio.dynamoplus.persistence.RecordFactory;
+import antessio.dynamoplus.persistence.bean.Record;
+import antessio.dynamoplus.persistence.bean.RecordKey;
+import antessio.dynamoplus.persistence.impl.DynamoDbTableRepository;
 import antessio.dynamoplus.service.bean.Document;
 import antessio.dynamoplus.service.system.bean.collection.*;
 import antessio.dynamoplus.utils.ConversionUtils;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Optional;
 
 import static antessio.dynamoplus.utils.MapUtil.entry;
@@ -79,7 +79,7 @@ public class CollectionService {
                 .withName(name)
                 .build();
         Record record = RecordFactory.getInstance().masterRecordFromDocument(fromCollectionToMap(collection), COLLECTION_METADATA);
-        return tableRepository.get(record.getPk(), record.getSk())
+        return tableRepository.get(record.getRecordKey())
                 .map(Record::getDocument)
                 .map(CollectionService::fromMapToCollection);
     }
@@ -104,7 +104,7 @@ public class CollectionService {
                 .withName(name)
                 .build();
         Record record = RecordFactory.getInstance().masterRecordFromDocument(fromCollectionToMap(collection), COLLECTION_METADATA);
-        tableRepository.delete(record.getPk(), record.getSk());
+        tableRepository.delete(record.getRecordKey());
     }
 
 
